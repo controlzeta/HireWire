@@ -11,3 +11,4 @@
 /HireWire.Web/bin/Debug/net9.0
 /HireWire.Web/obj
 /.vs
+/chrome-extension/node_modules
