@@ -1,0 +1,13 @@
+﻿################################################################################
+# Este archivo .gitignore ha sido creado automáticamente por Microsoft(R) Visual Studio.
+################################################################################
+
+/HireWire.Application/bin/Debug/net9.0
+/HireWire.Application/obj
+/HireWire.Domain/bin/Debug/net9.0
+/HireWire.Domain/obj
+/HireWire.Infrastructure/bin/Debug/net9.0
+/HireWire.Infrastructure/obj
+/HireWire.Web/bin/Debug/net9.0
+/HireWire.Web/obj
+/.vs
