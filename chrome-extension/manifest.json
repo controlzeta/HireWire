@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "HireWire Job Extractor",
+  "version": "1.0",
+  "description": "Extractor de vacantes de LinkedIn y Manfred para el MVP de HireWire.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.linkedin.com/*",
+    "https://*.getmanfred.com/*",
+    "file:///*",
+    "http://localhost:*/api/*",
+    "https://localhost:*/api/*"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  }
+}

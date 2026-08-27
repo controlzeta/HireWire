@@ -1,0 +1,16 @@
+{
+  "name": "hirewire-chrome-extension",
+  "version": "1.0.0",
+  "description": "Scraper extension for HireWire B2B Job acquisition",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

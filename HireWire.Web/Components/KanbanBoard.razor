@@ -1,0 +1,189 @@
+@using HireWire.Domain.Entities
+@using HireWire.Domain.Enums
+@using HireWire.Application.Interfaces
+@inject IJobLeadService JobLeadService
+@inject IJSRuntime JSRuntime
+
+<div class="kanban-board container-fluid mt-2">
+    <div class="row g-2 flex-nowrap" style="overflow-x: auto; min-height: 70vh; padding-bottom: 20px;">
+        
+        <!-- Column 1: Lead Extraído -->
+        @RenderKanbanColumn("Extraído", JobLeadStatus.LeadExtraido, "border-secondary", "#6c757d")
+
+        <!-- Column 2: Evaluado por IA -->
+        @RenderKanbanColumn("Evaluado por IA", JobLeadStatus.EvaluadoPorIa, "border-info", "#17a2b8")
+
+        <!-- Column 3: CV Generado -->
+        @RenderKanbanColumn("CV Generado", JobLeadStatus.CvGenerado, "border-warning", "#ffc107")
+
+        <!-- Column 4: Contactado -->
+        @RenderKanbanColumn("Contactado", JobLeadStatus.Contactado, "border-primary", "#007bff")
+
+        <!-- Column 5: Entrevista -->
+        @RenderKanbanColumn("Entrevista", JobLeadStatus.Entrevista, "border-success", "#28a745")
+
+        <!-- Column 6: Rechazo / Oferta (Combined) -->
+        <div class="col-md-2 rounded p-2" 
+             style="min-width: 230px; background-color: #f8f9fa; border-top: 4px solid #dc3545;"
+             @ondragover:preventdefault 
+             @ondragover="() => { }" 
+             @ondrop="() => HandleDrop(JobLeadStatus.Ofrecido)">
+            
+            <div class="column-header d-flex justify-content-between align-items-center mb-2 px-1">
+                <span class="fw-bold text-dark text-uppercase small">Cierre (Rechazo/Oferta)</span>
+                <span class="badge bg-danger rounded-circle">@GetCombinedClosedCount()</span>
+            </div>
+
+            <div class="column-body d-flex flex-column h-100" style="min-height: 500px;">
+                @foreach (var lead in GetClosedLeads())
+                {
+                    var item = lead;
+                    <div class="kanban-card card shadow-sm mb-2 p-2 border-start border-3 @(item.Status == JobLeadStatus.Ofrecido ? "border-success" : "border-danger")"
+                         draggable="true" 
+                         @ondragstart="() => HandleDragStart(item)"
+                         @onclick="() => SelectLead(item)"
+                         style="cursor: pointer; min-height: 100px;">
+                        
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <span class="fw-bold text-dark text-truncate small" style="max-width: 140px;" title="@item.JobTitle">@item.JobTitle</span>
+                            <span class="badge @(item.Status == JobLeadStatus.Ofrecido ? "bg-success" : "bg-danger")" style="font-size: 8px;">
+                                @(item.Status == JobLeadStatus.Ofrecido ? "Oferta" : "Rechazo")
+                            </span>
+                        </div>
+                        
+                        <div class="text-muted small text-truncate">@item.Company.Name</div>
+                        
+                        @if (item.OE_Config != null)
+                        {
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark border" style="font-size: 8px;">
+                                    @item.OE_Config.TargetRole
+                                </span>
+                            </div>
+                        }
+
+                        <div class="mt-2 d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-xs btn-primary py-0 px-2 text-decoration-none" @onclick="() => SelectLead(item)" @onclick:stopPropagation="true" style="font-size: 11px;">🔍 Ver</button>
+                            <div class="d-flex gap-1 align-items-center">
+                                @if (item.Status == JobLeadStatus.Ofrecido)
+                                {
+                                    <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1" @onclick="() => ToggleClosedStatus(item, JobLeadStatus.Rechazado)" @onclick:stopPropagation="true" style="font-size: 9px;">Rechazar</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-xs btn-outline-success py-0 px-1" @onclick="() => ToggleClosedStatus(item, JobLeadStatus.Ofrecido)" @onclick:stopPropagation="true" style="font-size: 9px;">Ofrecer</button>
+                                }
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" @onclick="() => DeleteLead(item)" @onclick:stopPropagation="true" title="Borrar" style="font-size: 9px;">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<JobLead> Leads { get; set; } = [];
+    [Parameter] public EventCallback OnStatusChanged { get; set; }
+    [Parameter] public EventCallback<JobLead> OnLeadSelected { get; set; }
+
+    private JobLead? draggedLead;
+
+    private void HandleDragStart(JobLead lead)
+    {
+        draggedLead = lead;
+    }
+
+    private async Task HandleDrop(JobLeadStatus targetStatus)
+    {
+        if (draggedLead != null)
+        {
+            if (draggedLead.Status != targetStatus)
+            {
+                await JobLeadService.ChangeJobLeadStatusAsync(draggedLead.Id, targetStatus);
+                await OnStatusChanged.InvokeAsync();
+            }
+            draggedLead = null;
+        }
+    }
+
+    private async Task ToggleClosedStatus(JobLead lead, JobLeadStatus targetStatus)
+    {
+        await JobLeadService.ChangeJobLeadStatusAsync(lead.Id, targetStatus);
+        await OnStatusChanged.InvokeAsync();
+    }
+
+    private async Task SelectLead(JobLead lead)
+    {
+        await OnLeadSelected.InvokeAsync(lead);
+    }
+
+    private async Task DeleteLead(JobLead lead)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"¿Deseas eliminar la vacante {lead.JobTitle}?");
+        if (confirmed)
+        {
+            await JobLeadService.DeleteJobLeadAsync(lead.Id);
+            await OnStatusChanged.InvokeAsync();
+        }
+    }
+
+    private int GetCombinedClosedCount()
+    {
+        return Leads.Count(l => l.Status == JobLeadStatus.Ofrecido || l.Status == JobLeadStatus.Rechazado);
+    }
+
+    private IEnumerable<JobLead> GetClosedLeads()
+    {
+        return Leads.Where(l => l.Status == JobLeadStatus.Ofrecido || l.Status == JobLeadStatus.Rechazado);
+    }
+
+    private RenderFragment RenderKanbanColumn(string title, JobLeadStatus status, string borderClass, string headerColor) => __builder => {
+        var columnLeads = Leads.Where(l => l.Status == status).ToList();
+        
+        <div class="col-md-2 rounded p-2" 
+             style="min-width: 230px; background-color: #f8f9fa; border-top: 4px solid @headerColor;"
+             @ondragover:preventdefault 
+             @ondragover="() => { }" 
+             @ondrop="() => HandleDrop(status)">
+            
+            <div class="column-header d-flex justify-content-between align-items-center mb-2 px-1">
+                <span class="fw-bold text-dark text-uppercase small">@title</span>
+                <span class="badge bg-secondary rounded-circle">@columnLeads.Count</span>
+            </div>
+
+            <div class="column-body d-flex flex-column h-100" style="min-height: 500px;">
+                @foreach (var lead in columnLeads)
+                {
+                    var item = lead;
+                    <div class="kanban-card card shadow-sm mb-2 p-2 border-start border-3 @borderClass"
+                         draggable="true" 
+                         @ondragstart="() => HandleDragStart(item)"
+                         @onclick="() => SelectLead(item)"
+                         style="cursor: pointer; min-height: 100px;">
+                        
+                        <div class="fw-bold text-dark text-truncate small mb-1" title="@item.JobTitle">@item.JobTitle</div>
+                        <div class="text-muted small text-truncate">@item.Company.Name</div>
+                        
+                        @if (item.OE_Config != null)
+                        {
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <span class="badge @(item.OE_Config.TargetRole == TargetRole.J1 ? "bg-primary" : "bg-info text-dark")" style="font-size: 8px;">
+                                    @item.OE_Config.TargetRole
+                                </span>
+                                <span class="text-muted" style="font-size: 9px;">Match: @((int)item.OE_Config.AiMatchScore.GetValueOrDefault())%</span>
+                            </div>
+                        }
+
+                        <div class="mt-2 d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-xs btn-primary py-0 px-2 text-decoration-none" @onclick="() => SelectLead(item)" @onclick:stopPropagation="true" style="font-size: 11px;">🔍 Ver Detalles</button>
+                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1" @onclick="() => DeleteLead(item)" @onclick:stopPropagation="true" title="Borrar vacante" style="font-size: 9px;">🗑️</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    };
+}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 280px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 12px;
+      margin: 0;
+      background-color: #f3f2f0;
+      color: rgba(0, 0, 0, 0.9);
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .logo-badge {
+      background-color: #0a66c2;
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-right: 8px;
+      font-family: sans-serif;
+    }
+    h3 {
+      margin: 0;
+      color: #0a66c2;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+    button {
+      width: 100%;
+      padding: 10px 16px;
+      background-color: #0a66c2;
+      color: white;
+      border: none;
+      border-radius: 24px; /* LinkedIn Pill Style */
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background-color 0.15s ease;
+    }
+    button:hover {
+      background-color: #004182;
+    }
+    button:active {
+      background-color: #002244;
+    }
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.6);
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .error {
+      color: #cc1016;
+      font-weight: 500;
+    }
+    .success {
+      color: #057642;
+      font-weight: 600;
+    }
+    .form-group {
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 11px;
+      color: rgba(0, 0, 0, 0.6);
+      margin-bottom: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .form-group input {
+      padding: 6px 10px;
+      border: 1px solid #b2b2b2;
+      border-radius: 4px;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.9);
+      background-color: #faf9f6;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #0a66c2;
+      background-color: #ffffff;
+    }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="logo-badge">hw</span>
+      <h3>HireWire Extractor</h3>
+    </div>
+    <div class="form-group">
+      <label for="endpointInput">API Endpoint</label>
+      <input type="text" id="endpointInput" value="https://localhost:7165/api/leads">
+    </div>
+    <button id="extractBtn">
+      <span id="btnText">Extraer Vacante</span>
+      <span id="btnSpinner" class="spinner" style="display: none;"></span>
+    </button>
+    <div id="statusDiv" class="status">Abre una vacante en LinkedIn o Manfred y presiona el botón.</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+@page "/"
+@using HireWire.Domain.Entities
+@using HireWire.Domain.Enums
+@using HireWire.Application.Interfaces
+@inject IJobLeadService JobLeadService
+@inject IAiSettingsManager AiSettings
+@inject IJSRuntime JSRuntime
+
+<PageTitle>HireWire — Command Center & Embudo B2B OE</PageTitle>
+
+<!-- Top Navbar Header -->
+<header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm px-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="container-fluid p-0">
+        <a class="navbar-brand d-flex align-items-center gap-2 font-monospace fw-bold text-warning" href="/">
+            <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+            <span class="fs-4 text-white" style="letter-spacing: -0.5px;">Hire<span class="text-warning">Wire</span></span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" style="font-size: 10px;">B2B OE Engine v2.0</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 active fw-bold px-3">
+                <i class="bi bi-kanban-fill"></i> Dashboard
+            </a>
+            <a href="/logs" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
+                <i class="bi bi-terminal-fill"></i> Visor de Logs
+            </a>
+
+            <!-- Selector de Proveedor de IA -->
+            <div class="d-flex align-items-center bg-black bg-opacity-50 px-3 py-1 rounded-3 border border-secondary border-opacity-50 ms-2">
+                <i class="bi bi-robot text-warning me-2 fs-5"></i>
+                <div class="text-start">
+                    <div class="text-secondary" style="font-size: 9px; line-height: 1; letter-spacing: 0.5px;">PROVEEDOR IA</div>
+                    <select class="form-select form-select-sm bg-transparent text-white border-0 py-0 pe-4 shadow-none fw-bold" 
+                            style="font-size: 12px; cursor: pointer;" 
+                            @bind="activeAiProvider" 
+                            @bind:after="OnAiProviderChanged">
+                        <option value="Mock" class="text-dark">Mock AI (Offline)</option>
+                        <option value="Gemini" class="text-dark">Google Gemini API</option>
+                        <option value="OpenAI" class="text-dark">OpenAI GPT-4o</option>
+                        <option value="Claude" class="text-dark">Anthropic Claude</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-sm btn-warning d-flex align-items-center gap-1 fw-bold px-3 ms-2" @onclick="LoadLeads">
+                <i class="bi bi-arrow-clockwise"></i> Recargar
+            </button>
+        </div>
+    </div>
+</header>
+
+<div class="container-fluid px-4">
+    <!-- Header Title & Live Stats Banner -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-speedometer2 text-primary"></i> Command Center: Panel de Contratos B2B
+            </h1>
+            <p class="text-muted small mb-0">Adquisición de ofertas de trabajo, clasificación Overemployment (J1 vs J2) y automatización de CVs.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="bg-white border rounded-3 px-3 py-1 text-center shadow-sm" style="min-width: 100px;">
+                <div class="text-muted" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Vacantes</div>
+                <div class="fw-bold text-dark fs-5">@((leads ?? []).Count)</div>
+            </div>
+            <div class="bg-white border rounded-3 px-3 py-1 text-center shadow-sm" style="min-width: 100px;">
+                <div class="text-muted" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Evaluadas IA</div>
+                <div class="fw-bold text-info fs-5">@((leads ?? []).Count(l => l.Status >= JobLeadStatus.EvaluadoPorIa))</div>
+            </div>
+            <div class="bg-white border rounded-3 px-3 py-1 text-center shadow-sm" style="min-width: 100px;">
+                <div class="text-muted" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">CVs Generados</div>
+                <div class="fw-bold text-success fs-5">@((leads ?? []).Count(l => l.Status >= JobLeadStatus.CvGenerado))</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros de Búsqueda -->
+    <div class="card mb-4 bg-light shadow-sm">
+        <div class="card-body py-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Buscar Empresa / Puesto</label>
+                    <input type="text" class="form-control" placeholder="Escribe para buscar..." @bind-value="searchTerm" @bind-value:event="oninput" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Filtrar por Estado</label>
+                    <select class="form-select" @bind="selectedStatusFilter">
+                        <option value="">Todos los estados</option>
+                        @foreach (var status in Enum.GetValues<JobLeadStatus>())
+                        {
+                            <option value="@status.ToString()">@status.ToString()</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Filtrar por Plataforma</label>
+                    <select class="form-select" @bind="selectedPlatformFilter">
+                        <option value="">Todas las plataformas</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Manfred">Manfred</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <!-- Selector de Vista -->
+        <div class="d-flex justify-content-between align-items-center mb-3 ms-3">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary @(activeView == "kanban" ? "active" : "")" @onclick='() => SetActiveView("kanban")'>🗂️ Vista de Kanban</button>
+                <button type="button" class="btn btn-outline-primary @(activeView == "list" ? "active" : "")" @onclick='() => SetActiveView("list")'>📋 Vista de Tabla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal de Datos -->
+    @if (leads == null)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!filteredLeads.Any())
+    {
+        <div class="alert alert-info text-center p-5 shadow-sm" role="alert">
+            <h4 class="alert-heading">No se encontraron vacantes</h4>
+            <p class="mb-0">Usa la extensión de Chrome para extraer ofertas de LinkedIn o Manfred y enviarlas a este panel.</p>
+        </div>
+    }
+    else if (activeView == "kanban")
+    {
+        <KanbanBoard Leads="filteredLeads.ToList()" OnStatusChanged="LoadLeads" OnLeadSelected="ShowDetails" />
+    }
+    else
+    {
+        <div class="table-responsive bg-white rounded shadow-sm border">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Puesto</th>
+                        <th>Plataforma</th>
+                        <th>Rango Salarial</th>
+                        <th>Ruta OE</th>
+                        <th>Puntaje</th>
+                        <th>Asíncrono</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lead in filteredLeads)
+                    {
+                        <tr>
+                            <td class="fw-bold">@lead.Company.Name</td>
+                            <td>@lead.JobTitle</td>
+                            <td>
+                                <span class="badge @(lead.Platform == "LinkedIn" ? "bg-info text-dark" : "bg-warning text-dark")">
+                                    @lead.Platform
+                                </span>
+                            </td>
+                            <td>@(lead.SalaryRange ?? "N/A")</td>
+                            <td>
+                                @if (lead.OE_Config != null)
+                                {
+                                    <span class="badge @(lead.OE_Config.TargetRole == TargetRole.J1 ? "bg-success" : "bg-secondary")">
+                                        @lead.OE_Config.TargetRole.ToString()
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (lead.OE_Config?.AiMatchScore != null)
+                                {
+                                    <span class="fw-bold">@lead.OE_Config.AiMatchScore%</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (lead.OE_Config != null)
+                                {
+                                    <span>@(lead.OE_Config.IsAsync ? "Sí" : "No")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @GetStatusBadgeClass(lead.Status)">
+                                    @lead.Status.ToString()
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-primary px-2 me-1" @onclick="() => ShowDetails(lead)">
+                                    🔍 Evaluar / Ver
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger px-2" @onclick="() => DeleteLead(lead)" title="Borrar vacante">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Modal de Detalles e Integración IA -->
+<JobLeadDetailModal 
+    Lead="selectedLead" 
+    IsVisible="isDetailVisible" 
+    OnClose="CloseDetails" 
+    OnSaved="LoadLeads" />
+
+@code {
+    private IReadOnlyList<JobLead>? leads;
+    private JobLead? selectedLead;
+    private bool isDetailVisible = false;
+    private string activeAiProvider = "Mock";
+    private string activeView = "kanban";
+
+    private void SetActiveView(string view)
+    {
+        activeView = view;
+    }
+
+    // Filters
+    private string searchTerm = "";
+    private string selectedStatusFilter = "";
+    private string selectedPlatformFilter = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        activeAiProvider = AiSettings.ActiveProvider;
+        await LoadLeads();
+    }
+
+    private void OnAiProviderChanged()
+    {
+        AiSettings.ActiveProvider = activeAiProvider;
+    }
+
+    private async Task LoadLeads()
+    {
+        leads = await JobLeadService.GetJobLeadsAsync();
+    }
+
+    private IEnumerable<JobLead> filteredLeads
+    {
+        get
+        {
+            if (leads == null) return Enumerable.Empty<JobLead>();
+
+            var result = leads.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                result = result.Where(l => 
+                    l.Company.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
+                    l.JobTitle.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
+            if (!string.IsNullOrEmpty(selectedStatusFilter))
+            {
+                result = result.Where(l => l.Status.ToString() == selectedStatusFilter);
+            }
+
+            if (!string.IsNullOrEmpty(selectedPlatformFilter))
+            {
+                result = result.Where(l => l.Platform == selectedPlatformFilter);
+            }
+
+            return result.OrderByDescending(l => l.Company.CreatedAt);
+        }
+    }
+
+    private async Task ShowDetails(JobLead lead)
+    {
+        selectedLead = await JobLeadService.GetJobLeadByIdAsync(lead.Id);
+        isDetailVisible = true;
+        StateHasChanged();
+    }
+
+    private void CloseDetails()
+    {
+        selectedLead = null;
+        isDetailVisible = false;
+    }
+
+    private string GetStatusBadgeClass(JobLeadStatus status)
+    {
+        return status switch
+        {
+            JobLeadStatus.LeadExtraido => "bg-secondary",
+            JobLeadStatus.EvaluadoPorIa => "bg-info text-dark",
+            JobLeadStatus.CvGenerado => "bg-warning text-dark",
+            JobLeadStatus.Contactado => "bg-primary",
+            JobLeadStatus.Entrevista => "bg-success",
+            JobLeadStatus.Rechazado => "bg-danger",
+            JobLeadStatus.Ofrecido => "bg-success fw-bold",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task DeleteLead(JobLead lead)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"¿Deseas eliminar la vacante de {lead.JobTitle} en {lead.Company.Name}?");
+        if (confirmed)
+        {
+            await JobLeadService.DeleteJobLeadAsync(lead.Id);
+            await LoadLeads();
+        }
+    }
+}

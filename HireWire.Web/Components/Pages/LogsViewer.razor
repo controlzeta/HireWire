@@ -1,0 +1,186 @@
+@page "/logs"
+@using System.IO
+@using System.Text.RegularExpressions
+@inject IWebHostEnvironment Environment
+
+<PageTitle>HireWire — Auditoría & Consola de Logs Serilog</PageTitle>
+
+<!-- Top Navbar Header -->
+<header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm px-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="container-fluid p-0">
+        <a class="navbar-brand d-flex align-items-center gap-2 font-monospace fw-bold text-warning" href="/">
+            <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+            <span class="fs-4 text-white" style="letter-spacing: -0.5px;">Hire<span class="text-warning">Wire</span></span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" style="font-size: 10px;">B2B OE Engine v2.0</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
+                <i class="bi bi-kanban-fill"></i> Dashboard
+            </a>
+            <a href="/logs" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 active fw-bold px-3">
+                <i class="bi bi-terminal-fill"></i> Visor de Logs
+            </a>
+
+            <button type="button" class="btn btn-sm btn-warning d-flex align-items-center gap-1 fw-bold px-3 ms-2" @onclick="RefreshLogs">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar Logs
+            </button>
+        </div>
+    </div>
+</header>
+
+<div class="container-fluid px-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-terminal text-primary"></i> Consola de Auditoría del Sistema (Serilog)
+            </h1>
+            <p class="text-muted small mb-0">Monitoreo en tiempo real de consultas SQL, respuestas completas de las APIs de IA y eventos de la aplicación.</p>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="card mb-3 bg-light shadow-sm">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm" placeholder="🔍 Buscar texto en los logs..." @bind-value="searchTerm" @bind-value:event="oninput" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" @bind="levelFilter">
+                        <option value="">Todos los niveles (INF, WRN, ERR)</option>
+                        <option value="INF">Information (INF)</option>
+                        <option value="WRN">Warning (WRN)</option>
+                        <option value="ERR">Error (ERR)</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-end">
+                    <span class="badge bg-secondary me-1">Líneas mostradas: @filteredLines.Count</span>
+                    <span class="badge bg-dark">Archivo: @activeLogFileName</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consola de Logs Estilo Terminal -->
+    <div class="card bg-dark border-secondary shadow-lg">
+        <div class="card-header bg-black text-light d-flex justify-content-between align-items-center py-2">
+            <span class="font-monospace small text-success">● LIVE SERILOG CONSOLE FILE LOGS</span>
+            <button type="button" class="btn btn-sm btn-outline-light py-0 px-2" style="font-size: 11px;" @onclick="ClearConsole">🗑️ Limpiar Vista</button>
+        </div>
+        <div class="card-body p-3 font-monospace" style="background-color: #121212; color: #d4d4d4; font-size: 12px; height: 65vh; overflow-y: auto; white-space: pre-wrap; line-height: 1.6;">
+            @if (!filteredLines.Any())
+            {
+                <div class="text-muted text-center py-5">
+                    <em>No hay líneas de log registradas que coincidan con los filtros.</em>
+                </div>
+            }
+            else
+            {
+                @foreach (var line in filteredLines)
+                {
+                    <div class="@GetLineClass(line)">@line</div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<string> allLines = [];
+    private string searchTerm = "";
+    private string levelFilter = "";
+    private string activeLogFileName = "Sin archivo";
+
+    protected override void OnInitialized()
+    {
+        RefreshLogs();
+    }
+
+    private void RefreshLogs()
+    {
+        try
+        {
+            var logsDir = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+            if (!Directory.Exists(logsDir))
+            {
+                allLines = ["Carpeta de logs vacía o aún no creada."];
+                activeLogFileName = "No existe carpeta logs";
+                return;
+            }
+
+            var logFiles = Directory.GetFiles(logsDir, "hirewire-*.log")
+                .OrderByDescending(f => File.GetLastWriteTime(f))
+                .ToList();
+
+            if (!logFiles.Any())
+            {
+                allLines = ["No se encontraron archivos .log en la carpeta."];
+                activeLogFileName = "Ningún log generado";
+                return;
+            }
+
+            var latestFile = logFiles.First();
+            activeLogFileName = Path.GetFileName(latestFile);
+
+            // Open with FileShare.ReadWrite so active log file locks don't block reading
+            using var fileStream = new FileStream(latestFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(fileStream);
+            
+            var lines = new List<string>();
+            while (!reader.EndOfStream)
+            {
+                var line = reader.ReadLine();
+                if (line != null)
+                {
+                    lines.Add(line);
+                }
+            }
+
+            // Keep the most recent 600 lines for optimal UI rendering
+            allLines = lines.TakeLast(600).Reverse().ToList();
+        }
+        catch (Exception ex)
+        {
+            allLines = [$"Error al leer los logs: {ex.Message}"];
+        }
+    }
+
+    private void ClearConsole()
+    {
+        allLines.Clear();
+    }
+
+    private List<string> filteredLines
+    {
+        get
+        {
+            var result = allLines.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(levelFilter))
+            {
+                result = result.Where(l => l.Contains($"[{levelFilter}]", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                result = result.Where(l => l.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return result.ToList();
+        }
+    }
+
+    private string GetLineClass(string line)
+    {
+        if (line.Contains("[ERR]") || line.Contains("Exception") || line.Contains("Error"))
+            return "text-danger fw-bold";
+        if (line.Contains("[WRN]") || line.Contains("Warning"))
+            return "text-warning";
+        if (line.Contains("[INF]") || line.Contains("Information"))
+            return "text-light";
+        if (line.Contains("Executed DbCommand") || line.Contains("SELECT") || line.Contains("INSERT"))
+            return "text-info opacity-75";
+        return "text-secondary";
+    }
+}

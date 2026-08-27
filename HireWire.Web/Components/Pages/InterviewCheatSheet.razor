@@ -1,0 +1,260 @@
+@page "/interview-cheat-sheet/{JobLeadId:guid}"
+@using HireWire.Domain.Entities
+@using HireWire.Domain.Enums
+@using HireWire.Application.Interfaces
+@using System.Text.Json
+@inject IJobLeadService JobLeadService
+@inject IJobLeadRepository JobLeadRepository
+
+<PageTitle>HireWire — Cheat Sheet de Entrevista: @(lead?.JobTitle ?? "Cargando...")</PageTitle>
+
+<!-- Top Navbar Header -->
+<header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm px-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="container-fluid p-0">
+        <a class="navbar-brand d-flex align-items-center gap-2 font-monospace fw-bold text-warning" href="/">
+            <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+            <span class="fs-4 text-white" style="letter-spacing: -0.5px;">Hire<span class="text-warning">Wire</span></span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" style="font-size: 10px;">B2B OE Engine v2.0</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
+                <i class="bi bi-kanban-fill"></i> Dashboard
+            </a>
+            <a href="/logs" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
+                <i class="bi bi-terminal-fill"></i> Visor de Logs
+            </a>
+        </div>
+    </div>
+</header>
+
+<div class="cheat-sheet-container bg-dark text-white min-vh-100 px-4 pb-5" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    
+    @if (lead == null)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="height: 70vh;">
+            <div class="spinner-border text-info" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Cargando Cheat Sheet...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Header banner -->
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+            <div>
+                <h1 class="text-info fw-bold mb-0 text-uppercase" style="font-size: 2rem; letter-spacing: 1px;">
+                    🎯 CHEAT SHEET DE ENTREVISTA: @lead.JobTitle
+                </h1>
+                <p class="text-warning mb-0 fw-semibold mt-1" style="font-size: 1.1rem;">
+                    Empresa: <span class="text-white">@lead.Company.Name</span> | Plataforma: <span class="text-white">@lead.Platform</span> | Rango: <span class="text-white">@(lead.SalaryRange ?? "N/D")</span>
+                </p>
+            </div>
+            <div>
+                <a href="/" class="btn btn-outline-info btn-sm px-3 fw-bold">
+                    ⬅️ Volver al Panel
+                </a>
+            </div>
+        </div>
+
+        <!-- High contrast grid (Quadrants) -->
+        <div class="row g-4">
+            
+            <!-- Quadrant 1: Tech Stack -->
+            <div class="col-md-6">
+                <div class="card bg-black border border-info h-100 shadow">
+                    <div class="card-header bg-info text-black py-2 px-3">
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">🛠️ TECH STACK INFERIDO</h2>
+                    </div>
+                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var tech in cheatSheet.TechStack)
+                            {
+                                <li class="mb-3 d-flex align-items-center">
+                                    <span class="text-info me-3" style="font-size: 1.8rem;">⚡</span>
+                                    <span class="fw-bold" style="font-size: 1.5rem;">@tech</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quadrant 2: Business Pains -->
+            <div class="col-md-6">
+                <div class="card bg-black border border-warning h-100 shadow">
+                    <div class="card-header bg-warning text-black py-2 px-3">
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">🔥 DOLORES DE NEGOCIO PROBABLES</h2>
+                    </div>
+                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var pain in cheatSheet.BusinessPains)
+                            {
+                                <li class="mb-3 d-flex align-items-start">
+                                    <span class="text-warning me-3" style="font-size: 1.8rem;">⚠️</span>
+                                    <span style="font-size: 1.45rem;">@pain</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quadrant 3: Key Questions -->
+            <div class="col-12 mt-4">
+                <div class="card bg-black border border-success shadow">
+                    <div class="card-header bg-success text-white py-2 px-3">
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">💬 PREGUNTAS INCISIVAS PARA HACERLES</h2>
+                    </div>
+                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
+                        <ol class="mb-0 ps-3">
+                            @foreach (var question in cheatSheet.Questions)
+                            {
+                                <li class="mb-3" style="font-size: 1.55rem; color: #e9ecef;">
+                                    <strong class="text-success">@question</strong>
+                                </li>
+                            }
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid JobLeadId { get; set; }
+
+    private JobLead? lead;
+    private CheatSheetModel cheatSheet = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        lead = await JobLeadService.GetJobLeadByIdAsync(JobLeadId);
+        
+        if (lead != null)
+        {
+            var asset = lead.InterviewAssets.FirstOrDefault();
+            
+            if (asset != null && !string.IsNullOrWhiteSpace(asset.CheatSheetData))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<CheatSheetModel>(asset.CheatSheetData, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    if (parsed != null)
+                    {
+                        cheatSheet = parsed;
+                    }
+                }
+                catch
+                {
+                    PopulateDefaultCheatSheet();
+                }
+            }
+            else
+            {
+                // Generate and save default sheet automatically
+                PopulateDefaultCheatSheet();
+                await SaveDefaultCheatSheet(asset);
+            }
+        }
+    }
+
+    private void PopulateDefaultCheatSheet()
+    {
+        if (lead == null) return;
+
+        // Smart extraction of tech keywords based on description
+        var desc = lead.RawDescription.ToLower();
+        var techList = new List<string>();
+        
+        if (desc.Contains("c#") || desc.Contains(".net")) techList.Add("C# 13 / .NET 9");
+        if (desc.Contains("sql server") || desc.Contains("mssql")) techList.Add("Microsoft SQL Server");
+        if (desc.Contains("oracle")) techList.Add("Oracle Database");
+        if (desc.Contains("angular")) techList.Add("Angular 18");
+        if (desc.Contains("azure")) techList.Add("Microsoft Azure");
+        if (desc.Contains("aws")) techList.Add("AWS Cloud");
+        if (desc.Contains("docker") || desc.Contains("kubernetes")) techList.Add("Docker / Containers");
+        if (desc.Contains("microservices") || desc.Contains("microservicios")) techList.Add("Arquitectura de Microservicios");
+        if (desc.Contains("ci/cd") || desc.Contains("jenkins") || desc.Contains("actions")) techList.Add("CI/CD Automation");
+
+        if (techList.Count < 3)
+        {
+            techList.Add("C# 13 / .NET 9");
+            techList.Add("Microsoft SQL Server");
+            techList.Add("Entity Framework Core");
+            techList.Add("Docker & Azure Services");
+        }
+
+        cheatSheet.TechStack = techList.ToArray();
+
+        var isJ1 = lead.OE_Config?.TargetRole == TargetRole.J1;
+
+        if (isJ1)
+        {
+            cheatSheet.BusinessPains = new[]
+            {
+                "Lentitud en lanzamientos por falta de orquestación y liderazgo arquitectónico claro.",
+                "Deuda técnica acumulada en la migración cloud-native de sistemas monolíticos.",
+                "Cuellos de botella y problemas de comunicación inter-departamental en despliegues críticos."
+            };
+            cheatSheet.Questions = new[]
+            {
+                "¿Cuál es el principal cuello de botella técnico que frena al equipo de desarrollo en este momento?",
+                "¿Cómo está estructurado el proceso de toma de decisiones arquitectónicas y qué nivel de autonomía tendrá este rol?",
+                "¿Qué métricas clave definirán el éxito del liderazgo técnico en los primeros 90 días?"
+            };
+        }
+        else
+        {
+            cheatSheet.BusinessPains = new[]
+            {
+                "Sobrecarga en la resolución de tickets y soporte reactivo a errores de producción.",
+                "Falta de automatización de APIs REST y sincronización ineficiente de base de datos.",
+                "Procesos de desarrollo sincrónicos bloqueantes que reducen la productividad individual."
+            };
+            cheatSheet.Questions = new[]
+            {
+                "¿Qué porcentaje de la carga de trabajo semanal se gestiona de forma totalmente asíncrona mediante tickets?",
+                "¿Cuál es la frecuencia y duración estimada de las reuniones de sincronización obligatorias en el equipo?",
+                "¿Cuáles son las tecnologías prioritarias que el contribuidor individual debe dominar desde el día uno?"
+            };
+        }
+    }
+
+    private async Task SaveDefaultCheatSheet(InterviewAsset? existingAsset)
+    {
+        if (lead == null) return;
+
+        var json = JsonSerializer.Serialize(cheatSheet);
+
+        if (existingAsset == null)
+        {
+            var newAsset = new InterviewAsset(
+                Guid.NewGuid(),
+                lead.Id,
+                dynamicCvPath: null,
+                cheatSheetData: json,
+                scheduledDate: null
+            );
+            lead.AddInterviewAsset(newAsset);
+        }
+        else
+        {
+            existingAsset.UpdateAssets(existingAsset.DynamicCvPath, json);
+        }
+
+        await JobLeadRepository.SaveChangesAsync();
+    }
+
+    public class CheatSheetModel
+    {
+        public string[] TechStack { get; set; } = Array.Empty<string>();
+        public string[] BusinessPains { get; set; } = Array.Empty<string>();
+        public string[] Questions { get; set; } = Array.Empty<string>();
+    }
+}
