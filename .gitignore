@@ -12,3 +12,9 @@
 /HireWire.Web/obj
 /.vs
 /chrome-extension/node_modules
+/HireWire.Infrastructure/bin/Release/net9.0
+/HireWire.Web/bin/Release/net9.0
+/HireWire.Application/bin/Release/net9.0
+/HireWire.Domain/bin/Release/net9.0
+/HireWire.Web/wwwroot/cvs
+/html
