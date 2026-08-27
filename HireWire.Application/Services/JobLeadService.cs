@@ -209,6 +209,13 @@ public class JobLeadService(
             aiResult.Industry
         );
 
+        // Advance status to EvaluadoPorIa if currently LeadExtraido
+        if (jobLead.Status == JobLeadStatus.LeadExtraido)
+        {
+            jobLead.ChangeStatus(JobLeadStatus.EvaluadoPorIa);
+            await repository.SaveChangesAsync();
+        }
+
         return aiResult;
     }
 
@@ -251,5 +258,198 @@ Responde EXACTAMENTE con la siguiente estructura de datos en tu respuesta:
     public async Task DeleteJobLeadAsync(Guid id)
     {
         await repository.DeleteJobLeadAsync(id);
+    }
+
+    private string GetRealProfileSummary()
+    {
+        var name = GetCandidateName();
+        var title = configuration["UserProfile:TitleEs"] ?? "Senior Software Engineer";
+        var summary = configuration["UserProfile:SummaryJ2Es"] ?? configuration["UserProfile:SummaryJ1Es"] ?? "";
+        
+        var experiences = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            var company = configuration[$"UserProfile:Experience:{i}:Company"];
+            if (string.IsNullOrWhiteSpace(company)) break;
+
+            var role = configuration[$"UserProfile:Experience:{i}:RoleEs"] ?? "Senior Developer";
+            var summaryExp = configuration[$"UserProfile:Experience:{i}:SummaryEs"] ?? "";
+            var contrib = configuration[$"UserProfile:Experience:{i}:ContributionsEs:0"] ?? "";
+            
+            experiences.Add($"- Empresa: {company} | Rol: {role} | Logro: {contrib}");
+        }
+
+        var expText = experiences.Count > 0 ? string.Join("\n", experiences) : "- Empresa: Control Zeta / HireWire | Rol: Lead Architect & Senior Developer";
+
+        return $"""
+CANDIDATO REAL: {name}
+TÍTULO PROFESIONAL: {title}
+PERFIL TÁCTICO: {summary}
+
+HISTORIAL DE EXPERIENCIA REAL (USA ÚNICAMENTE ESTOS DATOS):
+{expText}
+
+STACK TÉCNICO VERIFICADO: C# 13, .NET 9, ASP.NET Core, SQL Server, Entity Framework Core, Redis, Azure, Docker, Microservicios asíncronos, DDD, Clean Architecture.
+""";
+    }
+
+    public async Task<string> GenerateStarStoryAsync(Guid jobLeadId, string businessPain)
+    {
+        var lead = await repository.GetByIdAsync(jobLeadId)
+            ?? throw new KeyNotFoundException($"JobLead {jobLeadId} not found.");
+
+        var aiStrategy = aiServiceFactory.GetActiveStrategy();
+        var profile = GetRealProfileSummary();
+
+        var systemPrompt = $$"""
+Actúa como un Copiloto de Entrevista Técnica de Alto Rendimiento para {{GetCandidateName()}}.
+Debes generar una anécdota concisa de 30 segundos usando la ESTRUCTURA STAR (Situación, Tarea, Acción, Resultado).
+
+REGLAS CRÍTICAS DE CALIDAD:
+1. Basado ÚNICAMENTE en la experiencia real del candidato expuesta abajo (Control Zeta, Tech Enterprise Solutions, etc.). NO inventes empresas ficticias.
+2. Formato:
+   - **Situación & Tarea**: El reto o dolor de producción enfrentado.
+   - **Acción**: La arquitectura o código C# 13 / .NET 9 / SQL Server que implementaste.
+   - **Resultado**: El impacto cuantificable logrado (ej. latencia reducida 45%, cero tiempo de inactividad, entregas asíncronas limpias).
+3. Responde en MÁXIMO 3 viñetas cortas e hiper-legibles de reojo.
+
+PERFIL REAL:
+{{profile}}
+""";
+
+        var userPrompt = $"""
+Empresa de la Vacante: {lead.Company.Name} ({lead.JobTitle})
+Dolor de Negocio Específico: "{businessPain}"
+
+Genera el guion STAR optimizado.
+""";
+
+        return await aiStrategy.EvaluateFastPromptAsync(systemPrompt, userPrompt);
+    }
+
+    public async Task<string> GenerateStackPivotAsync(Guid jobLeadId, string targetTech)
+    {
+        var lead = await repository.GetByIdAsync(jobLeadId)
+            ?? throw new KeyNotFoundException($"JobLead {jobLeadId} not found.");
+
+        var aiStrategy = aiServiceFactory.GetActiveStrategy();
+        var profile = GetRealProfileSummary();
+
+        var systemPrompt = $$"""
+Actúa como un Copiloto de Entrevista Técnica para {{GetCandidateName()}}.
+El entrevistador ha mencionado la tecnología "{{targetTech}}".
+Instrucciones:
+1. Genera un speech de 20 segundos homologando esa tecnología con el stack real del candidato en Azure, C#, SQL Server o Redis.
+2. Formato directo: "En Azure / .NET 9 he implementado una solución arquitectónica equivalente utilizando... Por lo que la curva de adopción de {{targetTech}} es prácticamente nula."
+3. Usa ÚNICAMENTE datos de su historial profesional real.
+4. Máximo 2 oraciones concisas y de alto impacto.
+
+PERFIL REAL:
+{{profile}}
+""";
+
+        var userPrompt = $"""
+Puesto: {lead.JobTitle} en {lead.Company.Name}
+Tecnología solicitada: {targetTech}
+""";
+
+        return await aiStrategy.EvaluateFastPromptAsync(systemPrompt, userPrompt);
+    }
+
+    public async Task<string> GeneratePanicAnswerAsync(Guid jobLeadId, string query)
+    {
+        var lead = await repository.GetByIdAsync(jobLeadId)
+            ?? throw new KeyNotFoundException($"JobLead {jobLeadId} not found.");
+
+        var aiStrategy = aiServiceFactory.GetActiveStrategy();
+        var profile = GetRealProfileSummary();
+
+        var systemPrompt = $$"""
+Actúa como un Copiloto de Respuesta Inmediata de Pánico para {{GetCandidateName()}}.
+El candidato necesita responder verbalmente y de inmediato sobre: "{{query}}".
+Instrucciones:
+1. Devuelve 3 viñetas súper concisas y ejecutivas explicando la respuesta técnica perfecta.
+2. Conéctala directamente con la experiencia real en C# 13, .NET 9, SQL Server, Redis o Azure.
+3. Máximo 25 palabras por viñeta para lectura ultrarrápida.
+
+PERFIL REAL:
+{{profile}}
+""";
+
+        var userPrompt = $"""
+Pregunta o tema de pánico: {query}
+Vacante: {lead.JobTitle} ({lead.Company.Name})
+""";
+
+        return await aiStrategy.EvaluateFastPromptAsync(systemPrompt, userPrompt);
+    }
+
+    public async Task<string> GenerateSalaryScriptAsync(Guid jobLeadId)
+    {
+        var lead = await repository.GetByIdAsync(jobLeadId)
+            ?? throw new KeyNotFoundException($"JobLead {jobLeadId} not found.");
+
+        var aiStrategy = aiServiceFactory.GetActiveStrategy();
+
+        var systemPrompt = $$"""
+Actúa como un Asesor Táctico de Negociación Salarial B2B para {{GetCandidateName()}}.
+La vacante en {{lead.Company.Name}} ({{lead.JobTitle}}) indica "Salario: No especificado".
+Instrucciones:
+1. Genera 2 guiones de respuesta verbal directa para forzar al reclutador a revelar la banda presupuestal primero sin quemar la negociación.
+2. Enfocado en contratación de servicios B2B / Contratista independiente.
+3. Redacta 2 guiones directos entre comillas.
+""";
+
+        var userPrompt = $"Vacante: {lead.JobTitle} en {lead.Company.Name}. Sin rango salarial visible.";
+
+        return await aiStrategy.EvaluateFastPromptAsync(systemPrompt, userPrompt);
+    }
+
+    public async Task<string> GenerateCheatSheetJsonAsync(Guid jobLeadId)
+    {
+        var lead = await repository.GetByIdAsync(jobLeadId)
+            ?? throw new KeyNotFoundException($"JobLead {jobLeadId} not found.");
+
+        var aiStrategy = aiServiceFactory.GetActiveStrategy();
+
+        var systemPrompt = """
+Actúa como un analista técnico de entrevistas y arquitecto de software.
+Analiza la descripción de la vacante y genera un JSON con la estructura exacta:
+{
+  "techStack": ["Tecnología 1", "Tecnología 2", "Tecnología 3", "Tecnología 4"],
+  "businessPains": [
+    "Dolor de negocio específico 1 que la empresa intenta resolver contratando esta posición",
+    "Dolor de negocio específico 2",
+    "Dolor de negocio específico 3"
+  ],
+  "questions": [
+    "Pregunta incisiva y estratégica 1 para hacerle al entrevistador sobre la vacante",
+    "Pregunta incisiva 2",
+    "Pregunta incisiva 3"
+  ]
+}
+Responde ÚNICAMENTE con el objeto JSON válido.
+""";
+
+        var userPrompt = $"""
+Puesto: {lead.JobTitle}
+Empresa: {lead.Company.Name} ({lead.Company.Industry ?? "Tecnología"})
+Descripción de la Vacante:
+{lead.RawDescription}
+""";
+
+        var jsonText = await aiStrategy.EvaluateFastPromptAsync(systemPrompt, userPrompt);
+        
+        // Clean out markdown backticks if returned by LLM
+        if (jsonText.Contains("```json"))
+        {
+            jsonText = jsonText.Split("```json")[1].Split("```")[0].Trim();
+        }
+        else if (jsonText.Contains("```"))
+        {
+            jsonText = jsonText.Split("```")[1].Split("```")[0].Trim();
+        }
+
+        return jsonText;
     }
 }

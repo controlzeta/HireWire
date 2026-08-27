@@ -41,7 +41,12 @@ Empresa: {{companyName}}
 Descripción:
 {{description}}
 
-Genera además un mensaje de outreach (LinkedIn/correo) personalizado de unas pocas líneas dirigido al reclutador (o un mensaje estándar si no encuentras nombre) e intenta inferir el nombre del reclutador de la descripción si está explícito, así como la industria o sector de la empresa (ej. Fintech, E-Commerce, Salud, Consultoría TI, Banca, Defensa/Aeroespacial).
+Genera además un mensaje de outreach (LinkedIn/correo) hiper-personalizado, directo y profesional en español dirigido al reclutador (si detectas su nombre, salúdalo directamente por su nombre, ej. 'Hola Jeff,'). El mensaje debe:
+1. Mencionar la empresa ({{companyName}}) y el puesto ({{jobTitle}}).
+2. Presentar al candidato como Senior .NET Solutions Architect & Developer especializado en C# 13, .NET 9, SQL Server, Redis y Azure Cloud.
+3. Destacar brevemente su experiencia real en microservicios asíncronos y entrega continua con alto rendimiento.
+4. Concluir proponiendo una breve conversación de 10 minutos para explorar alineación táctica.
+5. Firmar al final con "[Candidato]".
 
 Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructura de propiedades:
 {
@@ -118,6 +123,61 @@ Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructu
         {
             logger.LogError(ex, "Error communicating with Gemini API. Falling back to Mock strategy.");
             return await new MockAiStrategy().EvaluateJobAsync(jobTitle, companyName, description);
+        }
+    }
+
+    public async Task<string> EvaluateFastPromptAsync(string systemPrompt, string userPrompt)
+    {
+        var apiKey = configuration["AiSettings:GeminiApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_GEMINI_API_KEY")
+        {
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+        }
+
+        try
+        {
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+            var payload = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = $"{systemPrompt}\n\n{userPrompt}" }
+                        }
+                    }
+                },
+                generationConfig = new
+                {
+                    maxOutputTokens = 180,
+                    temperature = 0.2f
+                }
+            };
+
+            var response = await httpClient.PostAsJsonAsync(url, payload);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+            var text = doc.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return text?.Trim() ?? "No se obtuvo respuesta de la IA.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error al invocar Gemini Fast Prompt.");
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
         }
     }
 }

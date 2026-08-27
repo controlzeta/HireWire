@@ -3,118 +3,245 @@
 @using HireWire.Domain.Enums
 @using HireWire.Application.Interfaces
 @using System.Text.Json
+@using Microsoft.JSInterop
 @inject IJobLeadService JobLeadService
 @inject IJobLeadRepository JobLeadRepository
+@inject IJSRuntime JSRuntime
 
-<PageTitle>HireWire — Cheat Sheet de Entrevista: @(lead?.JobTitle ?? "Cargando...")</PageTitle>
+<PageTitle>HireWire — Copiloto & Cheat Sheet: @(lead?.JobTitle ?? "Cargando...")</PageTitle>
 
-<!-- Top Navbar Header -->
-<header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm px-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+<!-- Top Navbar Header HUD -->
+<header class="navbar navbar-expand-lg border-bottom border-secondary px-4 py-2" style="background: linear-gradient(135deg, #090d16 0%, #111827 100%);">
     <div class="container-fluid p-0">
-        <a class="navbar-brand d-flex align-items-center gap-2 font-monospace fw-bold text-warning" href="/">
-            <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+        <a class="navbar-brand d-flex align-items-center gap-2 font-monospace fw-bold" href="/">
+            <div class="d-flex align-items-center justify-content-center bg-warning text-dark rounded-circle shadow-sm" style="width: 36px; height: 36px;">
+                <span class="fs-5 fw-bold">⚡</span>
+            </div>
             <span class="fs-4 text-white" style="letter-spacing: -0.5px;">Hire<span class="text-warning">Wire</span></span>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" style="font-size: 10px;">B2B OE Engine v2.0</span>
+            <span class="badge bg-danger text-white rounded-pill px-2 py-1 ms-2" style="font-size: 11px;">Real-Time Copilot v4.0</span>
         </a>
 
         <div class="d-flex align-items-center gap-3">
-            <a href="/" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
-                <i class="bi bi-kanban-fill"></i> Dashboard
-            </a>
-            <a href="/logs" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 px-3">
-                <i class="bi bi-terminal-fill"></i> Visor de Logs
+            <button class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-2 px-3 shadow-sm" @onclick="OpenPanicModal">
+                <span>🚨 PÁNICO / BUSCAR (Ctrl+K)</span>
+            </button>
+            <button class="btn btn-sm btn-info text-dark d-flex align-items-center gap-2 px-3 fw-bold shadow-sm" @onclick="RegenerateCheatSheet">
+                <span>⚡ Regenerar Cheat Sheet</span>
+            </button>
+            <a href="/" class="btn btn-sm btn-outline-light d-flex align-items-center gap-2 px-3">
+                <span>⬅️ Volver al Panel</span>
             </a>
         </div>
     </div>
 </header>
 
-<div class="cheat-sheet-container bg-dark text-white min-vh-100 px-4 pb-5" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<div class="cheat-sheet-wrapper text-white min-vh-100 p-4" style="background-color: #070a12; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
     
     @if (lead == null)
     {
-        <div class="d-flex justify-content-center align-items-center" style="height: 70vh;">
-            <div class="spinner-border text-info" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Cargando Cheat Sheet...</span>
-            </div>
+        <div class="d-flex flex-column justify-content-center align-items-center" style="height: 70vh;">
+            <div class="spinner-border text-info mb-3" role="status" style="width: 3.5rem; height: 3.5rem;"></div>
+            <p class="fs-4 text-light font-monospace">Cargando Acordeón Táctico y Copiloto de Entrevista...</p>
         </div>
     }
     else
     {
-        <!-- Header banner -->
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
-            <div>
-                <h1 class="text-info fw-bold mb-0 text-uppercase" style="font-size: 2rem; letter-spacing: 1px;">
-                    🎯 CHEAT SHEET DE ENTREVISTA: @lead.JobTitle
-                </h1>
-                <p class="text-warning mb-0 fw-semibold mt-1" style="font-size: 1.1rem;">
-                    Empresa: <span class="text-white">@lead.Company.Name</span> | Plataforma: <span class="text-white">@lead.Platform</span> | Rango: <span class="text-white">@(lead.SalaryRange ?? "N/D")</span>
-                </p>
-            </div>
-            <div>
-                <a href="/" class="btn btn-outline-info btn-sm px-3 fw-bold">
-                    ⬅️ Volver al Panel
-                </a>
+        <!-- Header Banner Infobar -->
+        <div class="p-4 rounded-4 mb-4 shadow-lg border border-secondary" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-info text-dark font-monospace fw-bold px-3 py-1 fs-6">🎯 EN PANTALLA SECUNDARIA</span>
+                        <span class="badge @(lead.OE_Config?.TargetRole == TargetRole.J1 ? "bg-primary text-white" : "bg-success text-white") fw-bold px-3 py-1 fs-6">
+                            Rol Target: @(lead.OE_Config?.TargetRole.ToString() ?? "J2")
+                        </span>
+                        @if (lead.OE_Config?.AiMatchScore != null)
+                        {
+                            <span class="badge bg-warning text-dark font-monospace fw-bold px-3 py-1 fs-6">
+                                Match: @lead.OE_Config.AiMatchScore%
+                            </span>
+                        }
+                    </div>
+                    <h1 class="fw-bold text-white mb-2" style="font-size: 2.3rem; letter-spacing: -0.5px;">
+                        @lead.JobTitle
+                    </h1>
+                    <div class="d-flex flex-wrap align-items-center gap-4 text-light fs-5">
+                        <div><strong class="text-info">Empresa:</strong> <span class="text-white fw-bold">@lead.Company.Name</span></div>
+                        <div><strong class="text-info">Industria:</strong> <span class="text-white">@(lead.Company.Industry ?? "No especificada")</span></div>
+                        <div><strong class="text-info">Plataforma:</strong> <span class="badge bg-secondary">@lead.Platform</span></div>
+                        <div class="d-flex align-items-center">
+                            <strong class="text-info me-1">Salario:</strong> 
+                            <span class="text-success fw-bold me-2">@(lead.SalaryRange ?? "No especificado")</span>
+                            <button class="btn btn-xs btn-outline-warning fw-bold px-2 py-0 fs-6" @onclick="TriggerSalaryScript" title="Generar guion de negociación salarial B2B">
+                                💵 Script Salarial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <div class="p-3 rounded-3 border border-secondary text-start" style="background-color: #0b1329;">
+                        <div class="text-warning small text-uppercase fw-bold mb-1">💡 Tip para la Videollamada:</div>
+                        <div class="text-white small">Mantén esta pestaña abierta en tu monitor auxiliar a la altura de la webcam para leer de reojo sin desviar la mirada. Usa <strong>Ctrl+K</strong> si te hacen una pregunta difícil.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- High contrast grid (Quadrants) -->
+        @if (!string.IsNullOrEmpty(copyAlertMessage))
+        {
+            <div class="alert alert-success border-success text-white fs-5 mb-4 shadow-sm" style="background-color: #064e3b;" role="alert">
+                ✅ @copyAlertMessage
+            </div>
+        }
+
+        <!-- Response HUD Modal / Overlay Display for Real-Time Copilot Answers -->
+        @if (isCopilotLoading || !string.IsNullOrEmpty(copilotTitle))
+        {
+            <div class="p-4 rounded-4 mb-4 shadow-lg border border-warning" style="background-color: #0d1a2d; border-width: 3px !important;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="mb-0 fw-bold text-warning d-flex align-items-center gap-2 fs-3">
+                        <span>🤖 COPILOTO EN VIVO:</span>
+                        <span>@copilotTitle</span>
+                    </h3>
+                    <button class="btn btn-sm btn-outline-light" @onclick="CloseCopilotResponse">✖️ Cerrar Copiloto</button>
+                </div>
+                
+                @if (isCopilotLoading)
+                {
+                    <div class="d-flex align-items-center gap-3 py-3">
+                        <div class="spinner-border text-warning" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+                        <span class="fs-4 text-light font-monospace">Consultando perfil real en profile.json y generando respuesta (&lt; 1.5s)...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 rounded-3 text-white fs-4 fw-semibold shadow-inner" style="background-color: #1e293b; border: 2px solid #f59e0b; line-height: 1.6; white-space: pre-line;">
+                        @copilotResponseText
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- 4 High Contrast Quadrants Grid -->
         <div class="row g-4">
             
             <!-- Quadrant 1: Tech Stack -->
             <div class="col-md-6">
-                <div class="card bg-black border border-info h-100 shadow">
-                    <div class="card-header bg-info text-black py-2 px-3">
-                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">🛠️ TECH STACK INFERIDO</h2>
+                <div class="card rounded-4 h-100 shadow-lg" style="background-color: #0f172a; border: 2px solid #38bdf8 !important;">
+                    <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center" style="background-color: #083344; border-bottom: 2px solid #38bdf8;">
+                        <h2 class="mb-0 fw-bold fs-3 text-white d-flex align-items-center gap-2">
+                            <span class="text-info">🛠️</span> TECH STACK INFERIDO
+                        </h2>
+                        <span class="badge bg-info text-dark fw-bold">Keywords Clave</span>
                     </div>
-                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
-                        <ul class="list-unstyled mb-0">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column gap-3">
                             @foreach (var tech in cheatSheet.TechStack)
                             {
-                                <li class="mb-3 d-flex align-items-center">
-                                    <span class="text-info me-3" style="font-size: 1.8rem;">⚡</span>
-                                    <span class="fw-bold" style="font-size: 1.5rem;">@tech</span>
-                                </li>
+                                <div class="px-3 py-2 rounded-3 text-white fw-bold shadow-sm d-flex align-items-center justify-content-between gap-2" style="background-color: #1e293b; border: 1.5px solid #38bdf8; font-size: 1.45rem;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-warning">⚡</span>
+                                        <span>@tech</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-info text-white fw-bold fs-6" @onclick="() => TriggerStackPivot(tech)" title="Homologar esta tecnología con tu stack real en Azure / SQL Server">
+                                        🔀 Pivot Script
+                                    </button>
+                                </div>
                             }
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Quadrant 2: Business Pains -->
             <div class="col-md-6">
-                <div class="card bg-black border border-warning h-100 shadow">
-                    <div class="card-header bg-warning text-black py-2 px-3">
-                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">🔥 DOLORES DE NEGOCIO PROBABLES</h2>
+                <div class="card rounded-4 h-100 shadow-lg" style="background-color: #0f172a; border: 2px solid #f59e0b !important;">
+                    <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center" style="background-color: #451a03; border-bottom: 2px solid #f59e0b;">
+                        <h2 class="mb-0 fw-bold fs-3 text-white d-flex align-items-center gap-2">
+                            <span class="text-warning">🔥</span> DOLORES DE NEGOCIO PROBABLES
+                        </h2>
+                        <span class="badge bg-warning text-dark fw-bold">Problem Points</span>
                     </div>
-                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
-                        <ul class="list-unstyled mb-0">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column gap-3">
                             @foreach (var pain in cheatSheet.BusinessPains)
                             {
-                                <li class="mb-3 d-flex align-items-start">
-                                    <span class="text-warning me-3" style="font-size: 1.8rem;">⚠️</span>
-                                    <span style="font-size: 1.45rem;">@pain</span>
-                                </li>
+                                <div class="p-3 rounded-3 text-white d-flex flex-column gap-2 shadow-sm" style="background-color: #1e293b; border: 1.5px solid #f59e0b;">
+                                    <div class="d-flex align-items-start gap-3" style="font-size: 1.35rem; line-height: 1.5;">
+                                        <span class="fs-3 text-warning">⚠️</span>
+                                        <div class="fw-semibold">@pain</div>
+                                    </div>
+                                    <div class="text-end mt-1">
+                                        <button class="btn btn-sm btn-warning text-dark fw-bold px-3 fs-6 shadow-sm" @onclick="() => TriggerStarStory(pain)" title="Generar anécdota STAR basada en tu experiencia real en profile.json">
+                                            🎬 Anécdota STAR (Real)
+                                        </button>
+                                    </div>
+                                </div>
                             }
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quadrant 3: Key Questions -->
-            <div class="col-12 mt-4">
-                <div class="card bg-black border border-success shadow">
-                    <div class="card-header bg-success text-white py-2 px-3">
-                        <h2 class="mb-0 fw-bold" style="font-size: 1.6rem;">💬 PREGUNTAS INCISIVAS PARA HACERLES</h2>
+            <!-- Quadrant 3: Incisive Questions -->
+            <div class="col-lg-8 col-md-12">
+                <div class="card rounded-4 h-100 shadow-lg" style="background-color: #0f172a; border: 2px solid #10b981 !important;">
+                    <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center" style="background-color: #064e3b; border-bottom: 2px solid #10b981;">
+                        <h2 class="mb-0 fw-bold fs-3 text-white d-flex align-items-center gap-2">
+                            <span class="text-success">💬</span> PREGUNTAS INCISIVAS PARA HACERLES
+                        </h2>
+                        <span class="badge bg-success text-white fw-bold">Preguntas Estratégicas</span>
                     </div>
-                    <div class="card-body p-4" style="font-size: 1.35rem; line-height: 1.8;">
-                        <ol class="mb-0 ps-3">
-                            @foreach (var question in cheatSheet.Questions)
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column gap-3">
+                            @for (int i = 0; i < cheatSheet.Questions.Length; i++)
                             {
-                                <li class="mb-3" style="font-size: 1.55rem; color: #e9ecef;">
-                                    <strong class="text-success">@question</strong>
-                                </li>
+                                var q = cheatSheet.Questions[i];
+                                <div class="p-3 rounded-3 text-white d-flex align-items-start gap-3 shadow-sm" style="background-color: #1e293b; border: 1.5px solid #10b981;">
+                                    <div class="badge bg-success text-dark font-monospace fw-bold fs-4 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px; background-color: #34d399 !important;">
+                                        @(i + 1)
+                                    </div>
+                                    <div class="fs-4 fw-bold text-white" style="line-height: 1.45;">
+                                        @q
+                                    </div>
+                                </div>
                             }
-                        </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quadrant 4: Legal & Security Flags -->
+            <div class="col-lg-4 col-md-12">
+                <div class="card rounded-4 h-100 shadow-lg" style="background-color: #0f172a; border: 2px solid #f43f5e !important;">
+                    <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center" style="background-color: #4c0519; border-bottom: 2px solid #f43f5e;">
+                        <h2 class="mb-0 fw-bold fs-4 text-white d-flex align-items-center gap-2">
+                            <span class="text-danger">🚨</span> ALERTAS & RED FLAGS
+                        </h2>
+                        <span class="badge bg-danger text-white fw-bold">Legal / Rules</span>
+                    </div>
+                    <div class="card-body p-4">
+                        @if (lead.OE_Config != null && !string.IsNullOrWhiteSpace(lead.OE_Config.DetectedRedFlags))
+                        {
+                            <div class="p-3 rounded-3 text-white fs-5 mb-3" style="background-color: #2a1215; border: 1.5px solid #f43f5e; line-height: 1.5;">
+                                <strong class="text-warning">Alertas Registradas:</strong>
+                                <div class="mt-2 text-white fw-semibold">@lead.OE_Config.DetectedRedFlags</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-3 rounded-3 text-white fs-5 mb-3" style="background-color: #1e293b; border: 1px solid #475569;">
+                                ℹ️ Sin alertas críticas detectadas por el motor de IA.
+                            </div>
+                        }
+
+                        <div class="p-3 rounded-3 text-white fs-6" style="background-color: #1e293b; border: 1.5px solid #f59e0b;">
+                            <strong class="text-warning fs-5">Regla de Oro en Llamada:</strong>
+                            <ul class="mb-0 ps-3 mt-2 fs-6 text-white font-semibold">
+                                <li>No mencionar nombres de competidores directos.</li>
+                                <li>Enfocar respuestas en entregables y resultados asíncronos.</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -123,13 +250,52 @@
     }
 </div>
 
+<!-- Panic Search Modal (Spotlight Ctrl+K) -->
+@if (isPanicModalOpen)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.85);" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content text-white rounded-4 border-2 border-danger shadow-lg" style="background-color: #0b0f19;">
+                <div class="modal-header border-bottom border-danger bg-danger text-white">
+                    <h4 class="modal-title fw-bold">🚨 COPILOTO DE PÁNICO (SPOTLIGHT Ctrl+K)</h4>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ClosePanicModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <label class="form-label fs-5 fw-bold text-warning mb-2">Ingresa la pregunta o concepto técnico que te acaba de hacer el entrevistador:</label>
+                    <div class="input-group input-group-lg mb-3">
+                        <input type="text" class="form-select-lg form-control bg-dark text-white border-warning fs-4" placeholder="Ej. Estrategia de caché distribuido, Circuit Breaker, etc." @bind="panicQueryText" @bind:event="oninput" @onkeyup="HandlePanicKeyPress" />
+                        <button class="btn btn-warning text-dark fw-bold fs-4 px-4" @onclick="ExecutePanicSearch" disabled="@isCopilotLoading">
+                            ⚡ Responder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public Guid JobLeadId { get; set; }
 
     private JobLead? lead;
     private CheatSheetModel cheatSheet = new();
+    private string copyAlertMessage = "";
+
+    // Copilot State
+    private bool isCopilotLoading = false;
+    private string copilotTitle = "";
+    private string copilotResponseText = "";
+
+    // Panic Modal State
+    private bool isPanicModalOpen = false;
+    private string panicQueryText = "";
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadLeadAndCheatSheet();
+    }
+
+    private async Task LoadLeadAndCheatSheet()
     {
         lead = await JobLeadService.GetJobLeadByIdAsync(JobLeadId);
         
@@ -157,18 +323,177 @@
             }
             else
             {
-                // Generate and save default sheet automatically
                 PopulateDefaultCheatSheet();
                 await SaveDefaultCheatSheet(asset);
             }
         }
     }
 
+    private async Task TriggerStarStory(string businessPain)
+    {
+        if (lead == null) return;
+        isCopilotLoading = true;
+        copilotTitle = $"Anécdota STAR (Real) para: '{businessPain}'";
+        copilotResponseText = "";
+        StateHasChanged();
+
+        try
+        {
+            copilotResponseText = await JobLeadService.GenerateStarStoryAsync(lead.Id, businessPain);
+        }
+        catch (Exception ex)
+        {
+            copilotResponseText = "Error al generar la anécdota STAR: " + ex.Message;
+        }
+        finally
+        {
+            isCopilotLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerStackPivot(string tech)
+    {
+        if (lead == null) return;
+        isCopilotLoading = true;
+        copilotTitle = $"Script de Homologación (Pivot) para: '{tech}'";
+        copilotResponseText = "";
+        StateHasChanged();
+
+        try
+        {
+            copilotResponseText = await JobLeadService.GenerateStackPivotAsync(lead.Id, tech);
+        }
+        catch (Exception ex)
+        {
+            copilotResponseText = "Error al generar el script de homologación: " + ex.Message;
+        }
+        finally
+        {
+            isCopilotLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerSalaryScript()
+    {
+        if (lead == null) return;
+        isCopilotLoading = true;
+        copilotTitle = "Script Táctico de Negociación Salarial B2B";
+        copilotResponseText = "";
+        StateHasChanged();
+
+        try
+        {
+            copilotResponseText = await JobLeadService.GenerateSalaryScriptAsync(lead.Id);
+        }
+        catch (Exception ex)
+        {
+            copilotResponseText = "Error al generar el script salarial: " + ex.Message;
+        }
+        finally
+        {
+            isCopilotLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenPanicModal()
+    {
+        isPanicModalOpen = true;
+        panicQueryText = "";
+    }
+
+    private void ClosePanicModal()
+    {
+        isPanicModalOpen = false;
+    }
+
+    private async Task HandlePanicKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ExecutePanicSearch();
+        }
+    }
+
+    private async Task ExecutePanicSearch()
+    {
+        if (lead == null || string.IsNullOrWhiteSpace(panicQueryText)) return;
+
+        ClosePanicModal();
+        isCopilotLoading = true;
+        copilotTitle = $"Respuesta de Pánico para: '{panicQueryText}'";
+        copilotResponseText = "";
+        StateHasChanged();
+
+        try
+        {
+            copilotResponseText = await JobLeadService.GeneratePanicAnswerAsync(lead.Id, panicQueryText);
+        }
+        catch (Exception ex)
+        {
+            copilotResponseText = "Error al buscar respuesta de pánico: " + ex.Message;
+        }
+        finally
+        {
+            isCopilotLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseCopilotResponse()
+    {
+        copilotTitle = "";
+        copilotResponseText = "";
+    }
+
+    private async Task RegenerateCheatSheet()
+    {
+        if (lead == null) return;
+        isCopilotLoading = true;
+        copilotTitle = "Generando Cheat Sheet Personalizado con IA...";
+        StateHasChanged();
+
+        try
+        {
+            var json = await JobLeadService.GenerateCheatSheetJsonAsync(lead.Id);
+            var parsed = JsonSerializer.Deserialize<CheatSheetModel>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (parsed != null && parsed.TechStack != null && parsed.TechStack.Length > 0)
+            {
+                cheatSheet = parsed;
+                var asset = lead.InterviewAssets.FirstOrDefault();
+                await SaveCheatSheetData(asset, json);
+                copyAlertMessage = "Cheat Sheet recalculado y personalizado con IA exitosamente.";
+            }
+            else
+            {
+                PopulateDefaultCheatSheet();
+            }
+        }
+        catch
+        {
+            PopulateDefaultCheatSheet();
+        }
+        finally
+        {
+            isCopilotLoading = false;
+            copilotTitle = "";
+            StateHasChanged();
+        }
+
+        await Task.Delay(2500);
+        copyAlertMessage = "";
+        StateHasChanged();
+    }
+
     private void PopulateDefaultCheatSheet()
     {
         if (lead == null) return;
 
-        // Smart extraction of tech keywords based on description
         var desc = lead.RawDescription.ToLower();
         var techList = new List<string>();
         
@@ -199,13 +524,13 @@
             cheatSheet.BusinessPains = new[]
             {
                 "Lentitud en lanzamientos por falta de orquestación y liderazgo arquitectónico claro.",
-                "Deuda técnica acumulada en la migración cloud-native de sistemas monolíticos.",
-                "Cuellos de botella y problemas de comunicación inter-departamental en despliegues críticos."
+                "Deuda técnica acumulada en la migración cloud-native de sistemas monolíticos legados.",
+                "Cuellos de botella e ineficiencia en el diseño de microservicios y sincronización de datos."
             };
             cheatSheet.Questions = new[]
             {
                 "¿Cuál es el principal cuello de botella técnico que frena al equipo de desarrollo en este momento?",
-                "¿Cómo está estructurado el proceso de toma de decisiones arquitectónicas y qué nivel de autonomía tendrá este rol?",
+                "¿Cómo está estructurado el proceso de toma de decisiones arquitectónicas y qué autonomía tendrá este rol?",
                 "¿Qué métricas clave definirán el éxito del liderazgo técnico en los primeros 90 días?"
             };
         }
@@ -221,16 +546,14 @@
             {
                 "¿Qué porcentaje de la carga de trabajo semanal se gestiona de forma totalmente asíncrona mediante tickets?",
                 "¿Cuál es la frecuencia y duración estimada de las reuniones de sincronización obligatorias en el equipo?",
-                "¿Cuáles son las tecnologías prioritarias que el contribuidor individual debe dominar desde el día uno?"
+                "¿Cuáles son las tecnologías prioritarias que el contribuidor individual debe dominar desde el primer día?"
             };
         }
     }
 
-    private async Task SaveDefaultCheatSheet(InterviewAsset? existingAsset)
+    private async Task SaveCheatSheetData(InterviewAsset? existingAsset, string json)
     {
         if (lead == null) return;
-
-        var json = JsonSerializer.Serialize(cheatSheet);
 
         if (existingAsset == null)
         {
@@ -249,6 +572,13 @@
         }
 
         await JobLeadRepository.SaveChangesAsync();
+    }
+
+    private async Task SaveDefaultCheatSheet(InterviewAsset? existingAsset)
+    {
+        if (lead == null) return;
+        var json = JsonSerializer.Serialize(cheatSheet);
+        await SaveCheatSheetData(existingAsset, json);
     }
 
     public class CheatSheetModel

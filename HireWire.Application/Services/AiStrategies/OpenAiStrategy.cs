@@ -32,6 +32,8 @@ public class OpenAiStrategy(
 Actúa como un reclutador de TI senior y un analista experto en Overemployment (OE).
 REGLA DE REQUISITOS LEGALES: Revisa si exige Ciudadanía (ej. 'US Citizen required'), Security Clearance activa, o Residencia en cierto país. Si existen, INCLÚYELOS PRIMERO en "detectedRedFlags" con "🚨 [REQUISITO LEGAL]".
 
+REGLA PARA "outreachMessage": Redacta un mensaje de contacto (LinkedIn/correo) hiper-personalizado, directo y profesional en español. Si detectas el nombre del reclutador, salúdalo por su nombre ('Hola Jeff,'). Menciona la empresa y el puesto, presenta al candidato como Senior .NET Solutions Architect & Developer (C# 13, .NET 9, SQL Server, Redis, Azure), destaca su experiencia real en microservicios asíncronos y concluye proponiendo una breve conversación de 10 minutos. Firma al final con "[Candidato]".
+
 Analiza la oferta y responde ÚNICAMENTE con un objeto JSON válido con las siguientes propiedades:
 {
   "targetRole": "J1" o "J2",
@@ -107,6 +109,54 @@ Descripción:
         {
             logger.LogError(ex, "Error communicating with OpenAI API. Falling back to Mock strategy.");
             return await new MockAiStrategy().EvaluateJobAsync(jobTitle, companyName, description);
+        }
+    }
+
+    public async Task<string> EvaluateFastPromptAsync(string systemPrompt, string userPrompt)
+    {
+        var apiKey = configuration["AiSettings:OpenAiApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_OPENAI_API_KEY")
+        {
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+        }
+
+        try
+        {
+            var payload = new
+            {
+                model = "gpt-4o-mini",
+                max_tokens = 180,
+                messages = new[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = userPrompt }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            request.Content = System.Net.Http.Json.JsonContent.Create(payload);
+
+            var response = await httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+            var text = doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            return text?.Trim() ?? "No se obtuvo respuesta de la IA.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error al invocar OpenAI Fast Prompt.");
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
         }
     }
 }

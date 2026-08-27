@@ -251,6 +251,14 @@
     private async Task LoadLeads()
     {
         leads = await JobLeadService.GetJobLeadsAsync();
+        if (selectedLead != null && leads != null)
+        {
+            var refreshed = leads.FirstOrDefault(l => l.Id == selectedLead.Id);
+            if (refreshed != null)
+            {
+                selectedLead = refreshed;
+            }
+        }
     }
 
     private IEnumerable<JobLead> filteredLeads

@@ -31,6 +31,8 @@ public class ClaudeAiStrategy(
 Actúa como un reclutador de TI senior y un analista experto en Overemployment (OE).
 REGLA DE REQUISITOS LEGALES: Revisa si exige Ciudadanía (ej. 'US Citizen required'), Security Clearance activa, o Residencia en cierto país. Si existen, INCLÚYELOS PRIMERO en "detectedRedFlags" con "🚨 [REQUISITO LEGAL]".
 
+REGLA PARA "outreachMessage": Redacta un mensaje de contacto (LinkedIn/correo) hiper-personalizado, directo y profesional en español. Si detectas el nombre del reclutador, salúdalo por su nombre ('Hola Jeff,'). Menciona la empresa y el puesto, presenta al candidato como Senior .NET Solutions Architect & Developer (C# 13, .NET 9, SQL Server, Redis, Azure), destaca su experiencia real en microservicios asíncronos y concluye proponiendo una breve conversación de 10 minutos. Firma al final con "[Candidato]".
+
 Analiza la oferta y responde ÚNICAMENTE con un objeto JSON válido con las siguientes propiedades (sin markdown ni explicaciones adicionales):
 {
   "targetRole": "J1" o "J2",
@@ -112,6 +114,54 @@ Descripción:
         {
             logger.LogError(ex, "Error communicating with Claude API. Falling back to Mock strategy.");
             return await new MockAiStrategy().EvaluateJobAsync(jobTitle, companyName, description);
+        }
+    }
+
+    public async Task<string> EvaluateFastPromptAsync(string systemPrompt, string userPrompt)
+    {
+        var apiKey = configuration["AiSettings:ClaudeApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_CLAUDE_API_KEY")
+        {
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+        }
+
+        try
+        {
+            var payload = new
+            {
+                model = "claude-3-5-sonnet-20240620",
+                max_tokens = 180,
+                system = systemPrompt,
+                messages = new[]
+                {
+                    new { role = "user", content = userPrompt }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
+            request.Headers.Add("x-api-key", apiKey);
+            request.Headers.Add("anthropic-version", "2023-06-01");
+            request.Content = System.Net.Http.Json.JsonContent.Create(payload);
+
+            var response = await httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+            var text = doc.RootElement
+                .GetProperty("content")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return text?.Trim() ?? "No se obtuvo respuesta de la IA.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error al invocar Claude Fast Prompt.");
+            return await new MockAiStrategy().EvaluateFastPromptAsync(systemPrompt, userPrompt);
         }
     }
 }

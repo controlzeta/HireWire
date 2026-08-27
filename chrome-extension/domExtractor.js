@@ -136,25 +136,82 @@ function extractSalaryRange(doc) {
 function extractRecruiterName(doc) {
   if (!doc) return "";
 
-  // 1. LinkedIn specific hiring manager / recruiter card selectors
-  const recruiterEl = doc.querySelector(
-    ".jobs-poster__name, .hirer-card__name, [class*='jobs-poster'] [class*='name'], [class*='hiring-team'] [class*='name'], [class*='hirer-card'] a[href*='/in/'], [class*='hiring-team'] a[href*='/in/']"
-  );
-  if (recruiterEl) {
-    const text = getText(recruiterEl);
-    if (text && text.length < 80) return text;
-  }
+  // 1. Modern LinkedIn SPA Hiring Team Card extraction via /in/ links and context
+  const inLinks = Array.from(doc.querySelectorAll('a[href*="/in/"]'));
+  
+  for (const link of inLinks) {
+    const href = link.getAttribute('href') || '';
+    if (href.includes('/in/me') || href.includes('/in/edit')) continue;
 
-  // 2. Search links inside hiring team containers or with "Hiring Manager" context
-  const posterLinks = doc.querySelectorAll("a[href*='/in/'], [class*='poster'], [class*='hirer']");
-  for (const el of posterLinks) {
-    const parentText = el.parentElement ? el.parentElement.textContent.toLowerCase() : "";
-    if (parentText.includes("solicitante del empleo") || parentText.includes("hiring manager") || parentText.includes("publicado por")) {
-      const text = getText(el);
-      if (text && !text.toLowerCase().includes("ver perfil") && text.length < 80) {
-        return text;
+    const container = link.closest('div, section, li, article') || link.parentElement;
+    const containerText = container ? container.textContent.toLowerCase() : '';
+
+    const isHiringContext = 
+      containerText.includes('equipo de contratación') ||
+      containerText.includes('anunciante del empleo') ||
+      containerText.includes('técnico de selección') ||
+      containerText.includes('hiring team') ||
+      containerText.includes('job poster') ||
+      containerText.includes('solicitante');
+
+    if (isHiringContext) {
+      // 1A. Check <p> paragraphs inside the link (removes icons/svgs)
+      const paragraphs = link.querySelectorAll('p');
+      for (const p of paragraphs) {
+        const clone = p.cloneNode(true);
+        const svgs = clone.querySelectorAll('svg, [role="img"]');
+        svgs.forEach(s => s.remove());
+        
+        let text = clone.textContent ? clone.textContent.trim() : '';
+        text = text.replace(/Verificado|Verified|•.*/gi, '').trim();
+
+        if (text && text.length >= 3 && text.length <= 50) {
+          const lower = text.toLowerCase();
+          if (!lower.includes('solicitante') && 
+              !lower.includes('anunciante') && 
+              !lower.includes('equipo') && 
+              !lower.includes('técnico') &&
+              !lower.includes('partner') &&
+              !lower.includes('recruiter') &&
+              !lower.includes('ceo') &&
+              !lower.includes('manager')) {
+            return text;
+          }
+        }
+      }
+
+      // 1B. Check <span> elements inside the link
+      const spans = link.querySelectorAll('span');
+      for (const span of spans) {
+        const clone = span.cloneNode(true);
+        const svgs = clone.querySelectorAll('svg, [role="img"]');
+        svgs.forEach(s => s.remove());
+
+        let text = clone.textContent ? clone.textContent.trim() : '';
+        text = text.replace(/Verificado|Verified|•.*/gi, '').trim();
+
+        if (text && text.length >= 3 && text.length <= 50) {
+          const lower = text.toLowerCase();
+          if (!lower.includes('solicitante') && 
+              !lower.includes('anunciante') && 
+              !lower.includes('equipo') && 
+              !lower.includes('técnico') &&
+              !lower.includes('partner') &&
+              !lower.includes('recruiter') &&
+              !lower.includes('ceo') &&
+              !lower.includes('manager')) {
+            return text;
+          }
+        }
       }
     }
+  }
+
+  // 2. Legacy class selectors fallback (.jobs-poster__name, .hirer-card__name)
+  const legacyEl = doc.querySelector(".jobs-poster__name, .hirer-card__name, [class*='jobs-poster'] [class*='name'], [class*='hiring-team'] [class*='name']");
+  if (legacyEl) {
+    const text = getText(legacyEl);
+    if (text && text.length < 50) return text;
   }
 
   return "";

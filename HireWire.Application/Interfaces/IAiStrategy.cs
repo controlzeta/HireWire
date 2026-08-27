@@ -9,4 +9,5 @@ public interface IAiStrategy
 {
     string ProviderName { get; }
     Task<AiEvaluationResultDto> EvaluateJobAsync(string jobTitle, string companyName, string description);
+    Task<string> EvaluateFastPromptAsync(string systemPrompt, string userPrompt);
 }

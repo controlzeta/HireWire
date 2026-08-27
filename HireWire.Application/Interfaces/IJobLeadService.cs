@@ -17,4 +17,9 @@ public interface IJobLeadService
     string GetManualAiPrompt(JobLead lead);
     Task ChangeJobLeadStatusAsync(Guid id, JobLeadStatus newStatus);
     Task DeleteJobLeadAsync(Guid id);
+    Task<string> GenerateStarStoryAsync(Guid jobLeadId, string businessPain);
+    Task<string> GenerateStackPivotAsync(Guid jobLeadId, string targetTech);
+    Task<string> GeneratePanicAnswerAsync(Guid jobLeadId, string query);
+    Task<string> GenerateSalaryScriptAsync(Guid jobLeadId);
+    Task<string> GenerateCheatSheetJsonAsync(Guid jobLeadId);
 }

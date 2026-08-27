@@ -47,9 +47,11 @@ public class MockAiStrategy(ILogger<MockAiStrategy>? logger = null) : IAiStrateg
         var outreachMessage = $"""
 Hola Sofía,
 
-Espero que estés muy bien. Te escribo porque encontré la vacante de {jobTitle} en {companyName} y considero que mi stack técnico (.NET Core, C# y Arquitectura de Software) encaja idealmente con lo que están buscando. 
+Espero que estés teniendo un excelente día. Te escribo porque analicé detenidamente la posición de {jobTitle} en {companyName} y considero que mi perfil como Senior .NET Solutions Architect & Developer encaja idealmente con las metas del equipo.
 
-Me encantaría coordinar una breve llamada para comentar los detalles.
+En mis proyectos recientes he liderado el diseño de microservicios asíncronos y desacoplados sobre C# 13, .NET 9, SQL Server, Redis y Azure Cloud, reduciendo las latencias de producción en un 45% y asegurando entregas continuas sin bloqueos sincrónicos.
+
+¿Tendrías 10 minutos esta semana para explorar si existe alineación táctica para esta posición?
 
 Atentamente,
 [Candidato]
@@ -70,5 +72,43 @@ Atentamente,
             recruiterName,
             industry
         );
+    }
+
+    public Task<string> EvaluateFastPromptAsync(string systemPrompt, string userPrompt)
+    {
+        var promptLower = userPrompt.ToLower();
+        
+        if (systemPrompt.Contains("STAR") || promptLower.Contains("dolor") || promptLower.Contains("star"))
+        {
+            // Extract pain topic if possible
+            var painTopic = "este dolor de producción";
+            if (userPrompt.Contains(": \""))
+            {
+                var parts = userPrompt.Split(": \"");
+                if (parts.Length > 1) painTopic = parts[1].TrimEnd('"').Trim();
+            }
+            return Task.FromResult($"⚡ (STAR): Ante el reto de '{painTopic}', en Control Zeta rediseñé la capa de persisted cache con Redis y SQL Server sobre .NET 9. Logré reducir el tiempo de respuesta en un 45% y eliminar los bloqueos sincrónicos en producción.");
+        }
+        
+        if (systemPrompt.Contains("homologando") || promptLower.Contains("pivot") || promptLower.Contains("solicitada:"))
+        {
+            var tech = "este stack";
+            if (userPrompt.Contains("solicitada: "))
+            {
+                tech = userPrompt.Split("solicitada: ")[1].Trim();
+            }
+            else if (userPrompt.Contains("Tecnología: "))
+            {
+                tech = userPrompt.Split("Tecnología: ")[1].Trim();
+            }
+            return Task.FromResult($"⚡ (Pivot): En Azure / .NET 9 he implementado patrones de arquitectura equivalentes a {tech} utilizando Azure Service Bus, Entity Framework Core y Redis. Por lo tanto, mi curva de adaptación a {tech} es prácticamente nula.");
+        }
+
+        if (systemPrompt.Contains("Salarial") || promptLower.Contains("salario") || promptLower.Contains("presupuesto"))
+        {
+            return Task.FromResult("⚡ (Salario):\n1. \"Actualmente me encuentro evaluando ofertas B2B en el rango de $4,500 - $6,500 USD/mes para posiciones asíncronas. Me gustaría confirmar cuál es el presupuesto asignado para este rol antes de avanzar.\"\n2. \"Dado que opero como contratista independiente B2B, ¿cuál es la banda salarial máxima aprobada para esta posición?\"");
+        }
+
+        return Task.FromResult($"⚡ (Copilot): Basado en mi experiencia real en Control Zeta y Tech Enterprise Solutions con C# 13, .NET 9 y SQL Server: Para '{userPrompt.Replace("\n", " ")}', la estrategia recomendada es aplicar un patrón asíncrono con colas de mensajes y caché en Redis.");
     }
 }

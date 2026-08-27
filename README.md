@@ -84,6 +84,19 @@ HireWire/
   - Ajuste de tipografía a escala proporcional de 1pt y restauración de márgenes a `1.5 cm`, asegurando un diseño A4 de una sola hoja.
 - **Descargas Estables de PDFs**:
   - Endpoint `/cvs/{id:guid}.pdf` actualizado para servir directamente los archivos `.pdf` pre-generados en disco con headers `application/pdf`, eliminando bloqueos de descarga en Chrome/Brave.
+- **UX & Avance de Estatus en Tiempo Real en Modal**:
+  - Unificados los campos de enrutamiento OE (*Rol Recomendado*, *Match Score %*, *Es Asíncrono*, *Red Flags*) y la barra de insignias de resumen directamente dentro de la tarjeta principal **🤖 Evaluación Automática con IA (Fase 2)**.
+  - Al presionar **`⚡ Executar Evaluación IA`**, el modal puebla al instante las insignias de resumen, la caja del *Mensaje de Outreach*, el formulario de edición y el selector desplegable `<select>`, todo en vivo y de forma transparente en un solo bloque.
+- **Extracción de Reclutadores en Tarjetas LinkedIn SPA**:
+  - Actualizado `extractRecruiterName` en `domExtractor.js` con soporte para tarjetas con clases CSS obfuscadas dinámicas y context-aware matching (*"Conoce al equipo de contratación"*, *"Anunciante del empleo"*), extrayendo limpiamente nombres como **Jeff Schneider** y **Frankie Pham** (eliminando insignias de verificación SVG y titulares).
+- **Rediseño Táctico HUD de Cheat Sheet (`/interview-cheat-sheet/{id}`)**:
+  - Rediseñada la vista de Cheat Sheet con interfaz HUD de alto contraste (Dark Glassmorphism, 4 cuadrantes con código de color: *Tech Stack*, *Dolores de Negocio*, *Preguntas Incisivas* y *Requisitos Legales / Red Flags*), optimizado para lectura periférica de reojo durante videollamadas.
+- **Fase 4 - Real-Time Interview Copilot (Motor de Respuesta Dinámica)**:
+  - Implementado `EvaluateFastPromptAsync` en `IAiStrategy` y todas las estrategias (Gemini 1.5 Flash, OpenAI, Claude, Mock) optimizado para respuestas de baja latencia (< 1.5s).
+  - Integrado el **Generador STAR (`🎬 Anécdota STAR`)**, **Stack Pivoter (`🔀 Pivot Script`)**, **Spotlight Panic Search (`🚨 Ctrl+K`)** y **Script Salarial (`💵 Script Salarial`)**, **fundamentados 100% en las experiencias y proyectos reales del candidato extraídos de `profile.json`**.
+- **Generación Dinámica de Cheat Sheet por IA (`GenerateCheatSheetJsonAsync`)**:
+  - Implementado `GenerateCheatSheetJsonAsync` en `JobLeadService.cs` y conectado con el botón **`⚡ Regenerar Cheat Sheet`** para analizar la descripción específica de cada vacante y generar un JSON único con *Dolores de Negocio*, *Tech Stack* y *Preguntas Incisivas* personalizadas por empresa.
+  - Actualizado `MockAiStrategy.cs` para inyectar dinámicamente el tema específico de cada dolor de negocio y tecnología solicitada en las respuestas de la IA.
 - **Plantillas Seguras para Git**:
   - Creación de `appsettings.template.json` y `profile.template.json` y actualización de `.gitignore` para prevenir la fuga de llaves de API o contraseñas.
 
