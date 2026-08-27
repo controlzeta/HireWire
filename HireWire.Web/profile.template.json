@@ -1,0 +1,44 @@
+{
+  "UserProfile": {
+    "FullName": "Your Name",
+    "TitleEs": "Ingeniero de Software Senior | Especialista .NET & Cloud",
+    "TitleEn": "Senior Software Engineer | .NET & Cloud Specialist",
+    "Email": "your.email@example.com",
+    "Phone": "+1 (555) 000-0000",
+    "LocationEs": "Ciudad, País",
+    "LocationEn": "City, Country (Remote)",
+    "LinkedInUrl": "linkedin.com/in/your-profile",
+    "DefaultLanguage": "auto",
+    "SummaryJ1Es": "Resumen profesional enfocado en Liderazgo y Arquitectura...",
+    "SummaryJ1En": "Professional summary focused on Leadership and Architecture...",
+    "SummaryJ2Es": "Resumen profesional enfocado en Contribuidor Individual y Desarrollo Asíncrono...",
+    "SummaryJ2En": "Professional summary focused on Individual Contributor & Async Development...",
+    "LanguagesAndFrameworks": "C#, .NET 9, ASP.NET Core, Angular, React, Microservices",
+    "Databases": "Microsoft SQL Server, PostgreSQL, Redis",
+    "CloudAndDevOps": "Microsoft Azure, Docker, CI/CD, GitHub Actions",
+    "DegreeEs": "Licenciatura en Informática / Sistemas",
+    "DegreeEn": "B.S. in Computer Science",
+    "University": "Nombre de la Universidad",
+    "GraduationYears": "2015 - 2020",
+    "Experience": [
+      {
+        "Company": "Empresa Ejemplo",
+        "RoleEs": "Senior Backend Developer",
+        "RoleEn": "Senior Backend Developer",
+        "StartDate": "2022",
+        "EndDate": "Presente",
+        "SummaryEs": "Liderazgo en diseño y desarrollo de servicios backend...",
+        "SummaryEn": "Leadership in backend service design and development...",
+        "ContributionsEs": [
+          "Diseño de arquitectura de microservicios sobre .NET.",
+          "Optimización de consultas SQL Server y caché distribuido."
+        ],
+        "ContributionsEn": [
+          "Designed microservice architecture on .NET.",
+          "Optimized SQL Server queries and distributed caching."
+        ],
+        "KeywordsOrTechnologies": "C#, .NET 9, Azure, SQL Server, Redis"
+      }
+    ]
+  }
+}

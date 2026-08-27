@@ -205,7 +205,8 @@ public class JobLeadService(
             aiResult.IsAsync,
             aiResult.DetectedRedFlags,
             outreachMessageFormatted,
-            aiResult.RecruiterName
+            aiResult.RecruiterName,
+            aiResult.Industry
         );
 
         return aiResult;

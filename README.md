@@ -1,26 +1,99 @@
-# HireWire - MVP (Fase 1)
+# ⚡ HireWire — Suite de Automatización B2B & Gestión Multicarrera
 
-HireWire es un sistema automatizado diseñado para la adquisición y gestión de contratos B2B (Contractor) y la optimización de procesos de Overemployment (OE). Actúa como un copiloto inteligente para agilizar el embudo de conversión laboral de perfiles Tech Lead y Arquitectos de Software.
+**HireWire** es una plataforma integral de grado empresarial diseñada para la adquisición, evaluación y gestión de oportunidades de contratación B2B (Contractor) y la administración eficiente de múltiples trayectorias profesionales concurrentes. Funciona como un copiloto inteligente que automatiza desde la captura de vacantes en tiempo real hasta la generación de CVs dinámicos ATS-proof y mensajes de postulación personalizados.
 
 ---
 
 ## 🛠️ Stack Tecnológico
-- **Backend / API**: .NET 9, ASP.NET Core Minimal APIs
-- **Lenguaje**: C# 13 (Uso de Primary Constructors, patrones avanzados)
-- **Frontend / Portal**: Blazor Web App (Interactive Server render mode)
-- **Persistencia**: Entity Framework Core 9.0, SQL Server (Remoto o LocalDB)
-- **Extracción de datos**: Extensión de Google Chrome (Manifest V3, JavaScript)
-- **Integración de IA**: OpenAI / Claude / Gemini (Evaluaciones manuales en Fase 1)
+- **Backend / API**: .NET 9, ASP.NET Core Minimal APIs, Swagger / OpenAPI
+- **Lenguaje**: C# 13 (Primary Constructors, Pattern Matching, Record Types)
+- **Frontend / UI**: Blazor Web App (Interactive Server Mode) con diseño responsivo, Tablero Kanban dinámico y Cheat Sheets de alto contraste
+- **Persistencia**: Entity Framework Core 9.0, Microsoft SQL Server (Transacciones, Concurrency Resolvers, Soft-Delete)
+- **Extracción de Datos**: Extensión de Google Chrome (Manifest V3, JavaScript, Toast Injection) con suite de pruebas en Jest + JSDOM
+- **Integración de IA Modular**: Pattern Strategy con soporte para **Google Gemini 1.5 Flash**, **OpenAI GPT-4o-mini**, **Anthropic Claude 3.5 Sonnet** y **Mock AI**
+- **Generación de Documentos**: QuestPDF (Motor de renderizado de CVs bilingües ATS en formato A4 de 1 sola página)
+- **Auditoría & Logs**: Serilog (Archivos rotativos de log y consola web de auditoría en tiempo real)
 
 ---
 
-## 📐 Arquitectura de la Solución
-El proyecto está estructurado con una arquitectura modular limpia:
+## 📐 Arquitectura del Sistema (Clean Architecture & DDD)
 
-1. **HireWire.Domain**: Biblioteca de clases que aloja las entidades de dominio ricas (DDD) y los enums que regulan las reglas de negocio (funnel, perfiles J1 y J2).
-2. **HireWire.Application**: Lógica de aplicación, DTOs de integración y firmas de servicios.
-3. **HireWire.Infrastructure**: Capa de datos, persistencia con EF Core, inicialización de migraciones y mapeos Fluent API.
-4. **HireWire.Web**: Aplicación Blazor Web App que expone el portal administrativo y las APIs de consumo de la extensión de Chrome, integrado con Swagger UI para pruebas interactivas.
+El repositorio está organizado en capas desacopladas que siguen los principios de **Domain-Driven Design (DDD)**:
+
+```text
+HireWire/
+├── HireWire.Domain/           # Entidades ricas (JobLead, Company, OE_Config, Communication), Enums y Reglas de Negocio
+├── HireWire.Application/      # Interfaces, DTOs, Servicios de Dominio (JobLeadService), Estrategias de IA
+├── HireWire.Infrastructure/   # EF Core DbContext, Repositorios, Servicios de PDF (QuestPDF), Binder de Configuración
+├── HireWire.Web/              # Portal Blazor Server, Endpoints Minimal API, Servidor de PDFs, Worker de Follow-Up
+├── chrome-extension/          # Extractor Manifest V3 para LinkedIn & Manfred con Jest Testing
+├── appsettings.template.json  # Plantilla de configuración libre de secretos para Git
+└── profile.template.json      # Plantilla de perfil bilingüe libre de secretos para Git
+```
+
+---
+
+## 🚀 Funcionalidades Principales
+
+### 1. Extractor Web Inteligente (Chrome Extension Manifest V3)
+* **Captura Completa de Datos**: Extrae Título, Empresa, URL limpia, Descripción completa, Rango Salarial, Plataforma y el nombre del Reclutador (*Hiring Manager*).
+* **Feedback Visual Inmediato**: Inyecta un sistema de notificaciones Toast animadas en la página activa de LinkedIn o Manfred.
+* **Branding LinkedIn-Style**: Popup interactivo con la insignia corporativa `hw` y fallback automático HTTPS ➡️ HTTP.
+
+### 2. Evaluación Multicarrera & Detección de Requisitos Legales por IA
+* **Clasificación de Perfil**: Rutea la vacante hacia **J1** (Liderazgo Técnico / Arquitectura Cloud) o **J2** (Contribuidor Individual / Desarrollo Asíncrono).
+* **Auditoría de Requisitos Legales (`🚨 [REQUISITO LEGAL]`)**: Detecta automáticamente cláusulas de Ciudadanía obligatoria (*US Citizen required*), Green Card, Security Clearance activa o restricciones de residencia geográfica.
+* **Inferencia del Sector / Industria**: Identifica y registra el sector empresarial de la compañía (*Fintech*, *Salud / HealthTech*, *Defensa & Aeroespacial*, *E-Commerce*, *Consultoría TI*).
+
+### 3. Mensajes de Postulación Personalizados
+* **Personalización del Candidato**: Lee el perfil bilingüe (`profile.json`) y sustituye automáticamente los comodines `[Candidato]` / `[Candidate]` por tu nombre real (**Francisco Arroyo**).
+* **Saludo al Reclutador**: Incorpora automáticamente el nombre del reclutador capturado (*"Hola [RecruiterName]"*).
+
+### 4. Generador de CVs Dinámicos ATS-Proof (1 Página Strict)
+* **Layout Unificado de 1 Página**: Tipografía ajustada proporcionalmente y márgenes equilibrados (1.5 cm) para garantizar que todo el contenido quepa en una sola hoja A4.
+* **Auto-Detección Bilingüe**: Alterna automáticamente entre Inglés y Español según la redacción de la oferta de trabajo (o fuerza un idioma específico mediante `DefaultLanguage`).
+* **Matriz de Experiencia Estructurada**: Renderiza logros, viñetas clave, resúmenes orientados al rol objetivo y tecnologías utilizadas.
+
+### 5. Portal Administrativo & Herramientas de Gestión
+* **Command Center Kanban**: Embudo interactivo drag-and-drop con filtros combinados por texto, estado y plataforma.
+* **Bajas Lógicas (Soft-Delete)**: El botón de eliminar traslada la vacante al estado `JobLeadStatus.Descartado`, ocultándola del tablero pero conservando el historial completo en SQL Server.
+* **Descarga Directa de PDFs**: Endpoint servidor optimizado que sirve el PDF estático de disco con encabezados `Content-Disposition: attachment` para evitar bloqueos SSL en navegadores.
+* **Visor de Logs en Tiempo Real (`/logs`)**: Consola interactiva para auditar peticiones, llamadas a la API de IA y eventos del sistema.
+* **Cheat Sheets de Entrevista (`/interview-cheat-sheet/{id}`)**: Pantalla completa Dark Mode de alto contraste diseñada para lectura rápida durante videollamadas.
+* **Servicio en Segundo Plano (`FollowUpWorker`)**: Tarea cron que identifica vacantes estancadas (más de 4 días sin interacción) para sugerir seguimientos.
+
+---
+
+## 📝 Bitácora de Funcionalidades (Changelog)
+
+> **Nota**: Cada nueva funcionalidad construida en el proyecto se registra en esta sección.
+
+### [2026-08-27] - Branding, Auditoría Legal, Inferencia de Industria & Descargas Estables
+- **Identidad de Marca & Branding**:
+  - Unificación de títulos de página bajo la convención `<PageTitle>HireWire — [Componente]</PageTitle>`.
+  - Creación e integración del favicon corporativo SVG (`favicon.svg`) en la cabecera de la aplicación Web.
+  - Creación de la familia de iconos para la Extensión de Chrome (`icon16.png`, `icon48.png`, `icon128.png`, `icon.png`) con insignia estilo LinkedIn `hw`.
+- **Auditoría Legal de Ciudadanía & Residencia en IA**:
+  - Inserción de reglas de inspección en los prompts de IA (Gemini, OpenAI, Claude y Mock) para alertar sobre requisitos de Ciudadanía Americana, Security Clearance y Residencia en Red Flags con el prefijo `🚨 [REQUISITO LEGAL]`.
+- **Inferencia Automática de Industria**:
+  - La IA analiza el contexto de la empresa y su descripción para deducir el sector (*Fintech*, *Salud*, *Defensa*, *E-Commerce*) y guardarlo en la entidad `Company`.
+  - Refresco en tiempo real del objeto `Lead` en el modal tras ejecutar la evaluación de IA.
+- **Reemplazo Automático del Candidato**:
+  - Integrada la lectura de `UserProfile:FullName` en `JobLeadService` para reemplazar automáticamente `[Candidato]` / `[Candidate]` por el nombre real del postulante.
+- **Optimización de PDF de 1 Sola Página**:
+  - Ajuste de tipografía a escala proporcional de 1pt y restauración de márgenes a `1.5 cm`, asegurando un diseño A4 de una sola hoja.
+- **Descargas Estables de PDFs**:
+  - Endpoint `/cvs/{id:guid}.pdf` actualizado para servir directamente los archivos `.pdf` pre-generados en disco con headers `application/pdf`, eliminando bloqueos de descarga en Chrome/Brave.
+- **Plantillas Seguras para Git**:
+  - Creación de `appsettings.template.json` y `profile.template.json` y actualización de `.gitignore` para prevenir la fuga de llaves de API o contraseñas.
+
+### [2026-08-26] - Extractor Chrome, Bajas Lógicas & Matriz Bilingüe
+- **Bajas Lógicas (Soft-Delete)**:
+  - Implementación del estado `JobLeadStatus.Descartado` (`StatusId = 8`) para borrado lógico preservando el historial.
+- **Captura del Reclutador**:
+  - Creación de `extractRecruiterName(doc)` en `domExtractor.js` para raspar el nombre del reclutador en LinkedIn.
+- **Esquema Bilingüe QuestPDF**:
+  - Implementación del motor de generación bilingüe de CVs con la clase `WorkExperienceItem`.
 
 ---
 
@@ -31,29 +104,38 @@ El proyecto está estructurado con una arquitectura modular limpia:
 - SQL Server o LocalDB instalado
 - Herramienta `dotnet-ef` instalada globalmente (`dotnet tool install -g dotnet-ef`)
 
-### 1. Configuración de Base de Datos
-Actualiza la cadena de conexión en el archivo `HireWire.Web/appsettings.json`.
-Luego, en la raíz del proyecto, ejecuta el comando para aplicar la estructura en tu servidor de base de datos:
+### 1. Configuración de Archivos de Entorno
+Copia las plantillas sin secretos a los archivos de configuración local:
+```bash
+cp appsettings.template.json HireWire.Web/appsettings.json
+cp profile.template.json HireWire.Web/profile.json
+```
+Edita `HireWire.Web/appsettings.json` con tu cadena de conexión SQL Server y tus llaves de API de IA (`GeminiApiKey`, `OpenAiApiKey`, etc.).
+
+### 2. Migración de Base de Datos
+En la raíz del repositorio, ejecuta:
 ```bash
 dotnet ef database update --project HireWire.Infrastructure --startup-project HireWire.Web
 ```
 
-*(Opcional: Si prefieres aplicar el script manualmente, el archivo DDL estructurado se encuentra en [InitialCreate.sql](InitialCreate.sql))*
-
-### 2. Ejecutar la Aplicación Web
-Para iniciar el servidor de desarrollo de Blazor y la API (incluyendo Swagger):
+### 3. Ejecución del Servidor Web
 ```bash
 dotnet run --project HireWire.Web
 ```
-Una vez iniciado, podrás acceder a:
-- Portal Blazor: `https://localhost:XXXX` (verificar puerto asignado)
-- Swagger UI: `https://localhost:XXXX/swagger`
+Acceso disponible en:
+* **HTTPS**: `https://localhost:7165/`
+* **HTTP**: `http://localhost:5033/`
+* **Swagger UI**: `https://localhost:7165/swagger`
 
 ---
 
-## 🤖 Extensión de Chrome (Extractor)
-Para instalar y configurar el scraper local:
-1. Abre Google Chrome y navega a `chrome://extensions`.
+## 🤖 Instalación de la Extensión de Chrome (Extractor)
+1. Abre Google Chrome y ve a `chrome://extensions`.
 2. Activa el **Modo de desarrollador** (esquina superior derecha).
-3. Haz clic en **Cargar descomprimida** y selecciona la carpeta `/chrome-extension` ubicada en la raíz de este repositorio.
-4. Entra a LinkedIn o Manfred, abre una oferta de empleo y presiona el popup de la extensión para enviarla a tu API local.
+3. Haz clic en **Cargar descomprimida** y selecciona la carpeta `/chrome-extension`.
+4. Para ejecutar las pruebas unitarias:
+   ```bash
+   cd chrome-extension
+   npm install
+   npm test
+   ```

@@ -29,14 +29,17 @@ public class ClaudeAiStrategy(
 
         var systemPrompt = $$"""
 Actúa como un reclutador de TI senior y un analista experto en Overemployment (OE).
+REGLA DE REQUISITOS LEGALES: Revisa si exige Ciudadanía (ej. 'US Citizen required'), Security Clearance activa, o Residencia en cierto país. Si existen, INCLÚYELOS PRIMERO en "detectedRedFlags" con "🚨 [REQUISITO LEGAL]".
+
 Analiza la oferta y responde ÚNICAMENTE con un objeto JSON válido con las siguientes propiedades (sin markdown ni explicaciones adicionales):
 {
   "targetRole": "J1" o "J2",
   "aiMatchScore": un número entre 0 y 100,
   "isAsync": true o false,
-  "detectedRedFlags": "descripción de las red flags encontradas",
+  "detectedRedFlags": "descripción de las red flags y requisitos de ciudadanía/residencia",
   "outreachMessage": "cuerpo del mensaje redactado para reclutador",
-  "recruiterName": "nombre del reclutador" o null
+  "recruiterName": "nombre del reclutador" o null,
+  "industry": "sector de la empresa" o null
 }
 """;
 

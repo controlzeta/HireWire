@@ -76,7 +76,8 @@ public class JobLeadRepository(HireWireDbContext dbContext) : IJobLeadRepository
         bool isAsync, 
         string? detectedRedFlags,
         string? outreachMessage = null,
-        string? recruiterName = null)
+        string? recruiterName = null,
+        string? industry = null)
     {
         // Wipes any stale tracked entities from long-lived Blazor SignalR circuit scope
         dbContext.ChangeTracker.Clear();
@@ -87,6 +88,12 @@ public class JobLeadRepository(HireWireDbContext dbContext) : IJobLeadRepository
             .Include(j => j.Communications)
             .FirstOrDefaultAsync(j => j.Id == jobLeadId)
             ?? throw new KeyNotFoundException($"JobLead with ID {jobLeadId} not found.");
+
+        if (!string.IsNullOrWhiteSpace(industry))
+        {
+            jobLead.Company.UpdateDetails(jobLead.Company.Name, industry, jobLead.Company.ScrapedContext);
+            dbContext.Entry(jobLead.Company).State = EntityState.Modified;
+        }
 
         var existingConfigInDb = await dbContext.OE_Configs
             .FirstOrDefaultAsync(c => c.JobLeadId == jobLeadId);

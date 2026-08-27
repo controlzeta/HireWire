@@ -33,22 +33,25 @@ Analiza la siguiente oferta de trabajo y determina si clasifica como:
 - J1 (Rol de liderazgo/arquitectura de sistemas, alta visibilidad, reuniones estratégicas frecuentes).
 - J2 (Rol de contribuidor individual, asíncrono, desarrollo de APIs, pocas reuniones, cero liderazgo).
 
+REGLA DE RED FLAGS & REQUISITOS LEGALES:
+Examina minuciosamente si la vacante exige requisitos estrictos de Ciudadanía (ej. 'US Citizenship Required', 'US Citizen only'), Residencia geográfica obligatoria (ej. 'Must reside in the US/Canada/LATAM'), Security Clearance activa, o incapacidad de patrocinar visa. Si encuentras algún requisito legal o de residencia, INCLÚYELO PRIMERO Y EXPLÍCITAMENTE en "detectedRedFlags" con el prefijo "🚨 [REQUISITO LEGAL]".
+
 Vacante: {{jobTitle}}
 Empresa: {{companyName}}
 Descripción:
 {{description}}
 
-Genera además un mensaje de outreach (LinkedIn/correo) personalizado de unas pocas líneas dirigido al reclutador (o un mensaje estándar si no encuentras nombre) e intenta inferir el nombre del reclutador de la descripción si está explícito, así como la industria o sector de la empresa (ej. Fintech, E-Commerce, Salud, Consultoría TI, Banca).
+Genera además un mensaje de outreach (LinkedIn/correo) personalizado de unas pocas líneas dirigido al reclutador (o un mensaje estándar si no encuentras nombre) e intenta inferir el nombre del reclutador de la descripción si está explícito, así como la industria o sector de la empresa (ej. Fintech, E-Commerce, Salud, Consultoría TI, Banca, Defensa/Aeroespacial).
 
 Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructura de propiedades:
 {
   "targetRole": "J1" o "J2",
   "aiMatchScore": un número entre 0 y 100,
   "isAsync": true o false,
-  "detectedRedFlags": "descripción de las red flags encontradas",
+  "detectedRedFlags": "descripción detallada de red flags y requisitos de ciudadanía/residencia",
   "outreachMessage": "cuerpo del mensaje redactado",
   "recruiterName": "nombre del reclutador" o null,
-  "industry": "sector de la empresa (ej. Fintech, E-Commerce, Salud, Consultoría TI)" o null
+  "industry": "sector de la empresa (ej. Fintech, E-Commerce, Salud, Defensa/Aeroespacial)" o null
 }
 """;
 

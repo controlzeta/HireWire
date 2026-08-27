@@ -266,6 +266,12 @@
             detectedRedFlags = result.DetectedRedFlags;
             generatedOutreachMessage = result.OutreachMessage;
 
+            var updatedLead = await JobLeadService.GetJobLeadByIdAsync(Lead.Id);
+            if (updatedLead != null)
+            {
+                Lead = updatedLead;
+            }
+
             await OnSaved.InvokeAsync();
         }
         catch (Exception ex)

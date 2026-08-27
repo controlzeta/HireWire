@@ -30,9 +30,17 @@ public class MockAiStrategy(ILogger<MockAiStrategy>? logger = null) : IAiStrateg
         var score = isLeadership ? 85.0 : 93.0;
         var isAsync = !isLeadership;
         
-        var redFlags = isLeadership 
+        var hasCitizenshipReq = description.Contains("citizen", StringComparison.OrdinalIgnoreCase) || 
+                                description.Contains("clearance", StringComparison.OrdinalIgnoreCase) ||
+                                description.Contains("green card", StringComparison.OrdinalIgnoreCase) ||
+                                companyName.Contains("Raytheon", StringComparison.OrdinalIgnoreCase) ||
+                                companyName.Contains("Lockheed", StringComparison.OrdinalIgnoreCase);
+
+        var legalFlag = hasCitizenshipReq ? "🚨 [REQUISITO LEGAL]: Requiere Ciudadanía de EE.UU., Green Card o Security Clearance activa. " : "";
+
+        var redFlags = legalFlag + (isLeadership 
             ? "Reuniones de sincronización diarias estimadas; alta visibilidad estratégica. Posible colisión de agendas." 
-            : "Trabajo asíncrono e individual. Pocas llamadas grupales. Ideal para J2.";
+            : "Trabajo asíncrono e individual. Pocas llamadas grupales. Ideal para J2.");
 
         var recruiterName = "Sofía Martínez (Inferred)";
 
