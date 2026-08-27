@@ -1,4 +1,4 @@
-﻿################################################################################
+################################################################################
 # Este archivo .gitignore ha sido creado automáticamente por Microsoft(R) Visual Studio.
 ################################################################################
 
@@ -18,3 +18,12 @@
 /HireWire.Domain/bin/Release/net9.0
 /HireWire.Web/wwwroot/cvs
 /html
+
+# Secrets and local user configurations
+appsettings.json
+appsettings.Development.json
+profile.json
+!appsettings.template.json
+!profile.template.json
+!**/appsettings.template.json
+!**/profile.template.json

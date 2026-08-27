@@ -1,0 +1,35 @@
+# HireWire - Project Rules & Architectural Directives (.cursorrules)
+
+## 1. Blazor Interactive Server Principles (CRITICAL)
+- **Global Interactive Render Mode (prerender: false)**: In ASP.NET Core .NET 8 / .NET 9 Web Apps, configure global interactivity strictly in `App.razor`:
+  - `App.razor`: `<HeadOutlet />` (NO rendermode) and `<Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />`.
+- **Do NOT place @rendermode on <HeadOutlet />**: `<HeadOutlet />` modifies the document `<head>` element, which cannot be diffed by the InteractiveServer DOM engine. Adding `@rendermode` to `<HeadOutlet />` causes `TypeError: Cannot read properties of null (reading 'insertBefore')` and crashes the Blazor SignalR circuit.
+- **Do NOT nest page-level @rendermode directives**: Do NOT add `@rendermode` or `@attribute [RenderModeInteractiveServer]` on individual pages (`Home.razor`) when global interactivity is set on `<Routes>`. Doing so creates a duplicate renderer conflict leading to browser errors like `Uncaught Error: No interop methods are registered for renderer 1`.
+- **Disable Prerendering (`prerender: false`)**: Disabling prerendering ensures that SignalR web socket circuit is established immediately on load without a static SSR pre-pass that fires un-registered DOM events.
+
+## 2. Event Propagation & Drag-and-Drop Safety
+- When buttons or interactive controls are placed inside `draggable="true"` cards (such as Kanban cards), always use `@onclick:stopPropagation="true"` on inner buttons. This prevents HTML5 drag events from swallowing click events.
+
+## 3. Chrome Extension Integration (Manifest V3)
+- Always include `<script src="popup.js"></script>` in `popup.html` right before `</body>`.
+- Always query active tabs using `chrome.tabs.query({ active: true, lastFocusedWindow: true })` first to avoid receiving empty arrays when the popup window itself is treated as `currentWindow`.
+
+## 4. Architecture & Clean Code
+- Maintain strict separation of concerns across projects:
+  - `HireWire.Domain`: Entities, Enums, Value Objects.
+  - `HireWire.Application`: DTOs, Interfaces (`IJobLeadService`, `IAiStrategy`), Domain Services.
+  - `HireWire.Infrastructure`: EF Core `HireWireDbContext`, Repositories, AI Strategy implementations, PDF Generator Services (`QuestPDF`).
+  - `HireWire.Web`: Blazor Interactive Server UI, Minimal API endpoints (`/api/leads`, `/cvs/{id}.pdf`).
+
+## 5. EF Core Persistence & Concurrency Rules in Blazor SignalR Circuits
+- **Scoped DbContext State Hygiene**: In Blazor Interactive Server apps, a Scoped DbContext lives for the duration of the SignalR circuit. Always call `dbContext.ChangeTracker.Clear()` before querying or updating entities in repositories to flush stale circuit tracking.
+- **Explicit EntityState for Navigation Properties**: When adding non-default key entities (`Guid.NewGuid()`) to collection or one-to-one navigations (`Communications`, `OE_Config`, `InterviewAssets`), explicitly set `dbContext.Entry(entity).State = EntityState.Added` (or `Detached` for phantom entries) so EF Core generates `INSERT` instead of invalid `UPDATE` statements.
+- **Optimistic Concurrency Handler**: Catch `DbUpdateConcurrencyException` in repository persistence methods and resolve database values with `entry.OriginalValues.SetValues(await entry.GetDatabaseValuesAsync())` before calling `SaveChangesAsync()` to guarantee zero concurrency crashes.
+- **Persist Parent Entities Before FK Dependent Queries**: Always call `await repository.SaveChangesAsync()` on newly created parent entities (`Company`) BEFORE running queries or attaching dependent child entities (`JobLead`) to prevent Foreign Key constraint conflicts.
+
+## 6. Chrome Extension Scraping & Recruiter Personalization Rules
+- **Recruiter Name Extraction**: `domExtractor.js` extracts recruiter/hiring manager names (`extractRecruiterName`) from LinkedIn cards (`.jobs-poster__name`, `.hirer-card__name`) and sends `recruiterName` in `ScrapedJobLeadDto`.
+- **Personalized Outreach Messages**: `JobLeadService` prioritizes `dto.RecruiterName` to populate `Communication.ContactName` and format personalized outreach greetings (`"Hola [RecruiterName]"`).
+
+## 7. Documentation & Changelog Maintenance Rules
+- **Changelog Sync**: Whenever a new feature, API endpoint, strategy, scraper improvement, or architectural change is implemented, you MUST immediately document it in the `Changelog / Bitácora de Funcionalidades` section of `README.md`.
