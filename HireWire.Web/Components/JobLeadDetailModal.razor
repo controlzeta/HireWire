@@ -199,7 +199,7 @@
 
                         @if (Lead.Status >= JobLeadStatus.EvaluadoPorIa)
                         {
-                            <a href="/interview-cheat-sheet/@Lead.Id" target="_blank" class="btn btn-success btn-sm fw-bold me-2">
+                            <a href="interview-cheat-sheet/@Lead.Id" target="_blank" class="btn btn-success btn-sm fw-bold me-2">
                                 🎯 Cheat Sheet Entrevista
                             </a>
                         }
@@ -267,7 +267,7 @@
             }
 
             hasGeneratedCv = Lead.InterviewAssets != null && Lead.InterviewAssets.Any(a => !string.IsNullOrEmpty(a.DynamicCvPath));
-            cvDownloadPath = hasGeneratedCv ? $"/cvs/{Lead.Id}.pdf?t={DateTime.UtcNow.Ticks}" : "";
+            cvDownloadPath = hasGeneratedCv ? $"cvs/{Lead.Id}.pdf?t={DateTime.UtcNow.Ticks}" : "";
 
             errorMessage = "";
             showCopiedAlert = false;
@@ -423,7 +423,7 @@
         {
             await CvGeneratorService.GenerateCvAsync(Lead.Id);
             hasGeneratedCv = true;
-            cvDownloadPath = $"/cvs/{Lead.Id}.pdf?t={DateTime.UtcNow.Ticks}";
+            cvDownloadPath = $"cvs/{Lead.Id}.pdf?t={DateTime.UtcNow.Ticks}";
 
             if (Lead.Status < JobLeadStatus.CvGenerado)
             {

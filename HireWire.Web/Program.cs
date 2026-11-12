@@ -67,6 +67,15 @@ builder.Services.AddHostedService<FollowUpWorker>();
 
 var app = builder.Build();
 
+// Support hosting under a sub-path (e.g. controlzeta.io/hirewire).
+// In IIS in-process hosting the path base arrives via the request automatically;
+// for other hosts set "PathBase" in configuration (env var PathBase / ASPNETCORE_PathBase is picked up automatically).
+var configuredPathBase = app.Configuration["PathBase"];
+if (!string.IsNullOrWhiteSpace(configuredPathBase))
+{
+    app.UsePathBase(configuredPathBase.StartsWith('/') ? configuredPathBase : "/" + configuredPathBase);
+}
+
 // Enable Swagger UI in development
 if (app.Environment.IsDevelopment())
 {
@@ -82,7 +91,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS when an HTTPS port is actually known (avoids breaking HTTP-only deployments)
+var httpsPort = app.Configuration["https_port"] ?? app.Configuration["HTTPS_PORTS"] ?? app.Configuration["ASPNETCORE_HTTPS_PORT"];
+if (!string.IsNullOrEmpty(httpsPort))
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowExtension");
 app.UseStaticFiles();
 app.UseAntiforgery();
