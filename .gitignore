@@ -29,3 +29,5 @@ profile.json
 !**/profile.template.json
 /HireWire.Tests/bin
 /HireWire.Tests/obj
+/HireWire.Web/Properties/PublishProfiles/FolderProfile.pubxml
+/HireWire.Web/Properties/PublishProfiles/FolderProfile.pubxml.user
