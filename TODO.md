@@ -24,4 +24,5 @@ Rastreo de mejoras por aplicar y completadas.
 
 | ID | Tarea detallada | Fecha completada |
 |----|-----------------|------------------|
-| DONE-001 | *(pendiente)* | |
+| DONE-001 | Publicación bajo subpath (controlzeta.io/hirewire): `<base href>` dinámico desde `NavigationManager.BaseUri`, links absolutos → relativos, `UsePathBase` opcional por config `PathBase`, `UseHttpsRedirection` solo con puerto HTTPS conocido. Verificado en local (raíz y PathBase) y en producción. Commit 1ea1245. | 2026-11-12 |
+| DONE-002 | Fase 1 de cobertura de pruebas: `HireWire.Tests` recreado (xUnit + Moq + FluentAssertions + Coverlet) y agregado a la solución; 89 pruebas (Domain + Application). Cobertura de líneas ~56% (Application 47%, Domain 97.5%). Branch `TestCoverage`. | 2026-11-12 |
