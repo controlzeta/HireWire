@@ -69,11 +69,11 @@ HireWire/
 
 > **Nota**: Cada nueva funcionalidad construida en el proyecto se registra en esta sección.
 
-### [2026-11-12] - Suite de pruebas automatizadas (Fase 1 y 2) & Publicación bajo subpath
+### [2026-11-12] - Suite de pruebas automatizadas (Fase 1, 2 y 3) & Publicación bajo subpath
 - **Suite de pruebas `HireWire.Tests` (xUnit + Moq + FluentAssertions + Coverlet)**:
   - Recreación del proyecto de pruebas y agregación a la solución.
-  - 120 pruebas unitarias y de integración sobre Domain (entidades, 100% líneas), Application (JobLeadService, AiServiceFactory, AiSettingsManager, MockAiStrategy, fallback a Mock de Gemini/OpenAI/Claude sin API key) e Infrastructure (`JobLeadRepository` contra SQLite in-memory, `DynamicCvGeneratorService` generando PDFs reales con QuestPDF).
-  - Cobertura de líneas: **~56%** (Application 61.7%, Domain 100%, Infrastructure 43.1%). Ejecutar con `dotnet test HireWire.Tests --collect:"XPlat Code Coverage"`.
+  - 133 pruebas unitarias y de integración: Domain (entidades), Application (JobLeadService, AiServiceFactory, AiSettingsManager, MockAiStrategy, caminos exitosos y de fallback de Gemini/OpenAI/Claude con HttpClient stubeado), Infrastructure (`JobLeadRepository` contra SQLite in-memory, `DynamicCvGeneratorService` generando PDFs reales con QuestPDF) y Web (endpoints `/`, `POST /api/leads`, `GET /cvs/{id}.pdf` vía `WebApplicationFactory` con SQLite in-memory, `FollowUpWorker`).
+  - Cobertura de líneas: **~85%** (996/1166; se excluyen componentes Razor y migraciones EF). Ejecutar con `dotnet test HireWire.Tests --settings coverage.runsettings --collect:"XPlat Code Coverage"`. `coverage-check.py` es el ratchet que exige mínimo 75%.
 - **Publicación bajo subpath (controlzeta.io/hirewire)**: `<base href>` dinámico desde `NavigationManager.BaseUri`, links relativos, `UsePathBase` opcional por config `PathBase`, redirección HTTPS solo con puerto conocido.
 
 ### [2026-08-27] - Branding, Auditoría Legal, Inferencia de Industria & Descargas Estables
@@ -150,9 +150,10 @@ Acceso disponible en:
 
 ### 4. Pruebas Unitarias y Cobertura
 ```bash
-dotnet test HireWire.Tests --collect:"XPlat Code Coverage"
+dotnet test HireWire.Tests --settings coverage.runsettings --collect:"XPlat Code Coverage"
+python coverage-check.py
 ```
-La cobertura actual es ~56% de líneas (Domain 100%). El reporte se genera en `HireWire.Tests/TestResults/`.
+La cobertura actual es **~85% de líneas** (excluyendo UI Razor y migraciones EF, que requieren bUnit/Playwright o son generadas). `coverage-check.py` actúa como ratchet y falla si se baja del **75%**. En máquinas con la app corriendo (DLLs bloqueadas), usa `-c Release`.
 
 ---
 

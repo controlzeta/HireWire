@@ -148,3 +148,6 @@ app.MapRazorComponents<HireWire.Web.Components.App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+// Exposes the implicit Program class for WebApplicationFactory<Program> in tests
+public partial class Program;
