@@ -26,6 +26,7 @@ HireWire/
 ├── HireWire.Application/      # Interfaces, DTOs, Servicios de Dominio (JobLeadService), Estrategias de IA
 ├── HireWire.Infrastructure/   # EF Core DbContext, Repositorios, Servicios de PDF (QuestPDF), Binder de Configuración
 ├── HireWire.Web/              # Portal Blazor Server, Endpoints Minimal API, Servidor de PDFs, Worker de Follow-Up
+├── HireWire.Tests/            # Suite de pruebas xUnit + Moq + FluentAssertions + Coverlet (120 pruebas)
 ├── chrome-extension/          # Extractor Manifest V3 para LinkedIn & Manfred con Jest Testing
 ├── appsettings.template.json  # Plantilla de configuración libre de secretos para Git
 └── profile.template.json      # Plantilla de perfil bilingüe libre de secretos para Git
@@ -67,6 +68,13 @@ HireWire/
 ## 📝 Bitácora de Funcionalidades (Changelog)
 
 > **Nota**: Cada nueva funcionalidad construida en el proyecto se registra en esta sección.
+
+### [2026-11-12] - Suite de pruebas automatizadas (Fase 1 y 2) & Publicación bajo subpath
+- **Suite de pruebas `HireWire.Tests` (xUnit + Moq + FluentAssertions + Coverlet)**:
+  - Recreación del proyecto de pruebas y agregación a la solución.
+  - 120 pruebas unitarias y de integración sobre Domain (entidades, 100% líneas), Application (JobLeadService, AiServiceFactory, AiSettingsManager, MockAiStrategy, fallback a Mock de Gemini/OpenAI/Claude sin API key) e Infrastructure (`JobLeadRepository` contra SQLite in-memory, `DynamicCvGeneratorService` generando PDFs reales con QuestPDF).
+  - Cobertura de líneas: **~56%** (Application 61.7%, Domain 100%, Infrastructure 43.1%). Ejecutar con `dotnet test HireWire.Tests --collect:"XPlat Code Coverage"`.
+- **Publicación bajo subpath (controlzeta.io/hirewire)**: `<base href>` dinámico desde `NavigationManager.BaseUri`, links relativos, `UsePathBase` opcional por config `PathBase`, redirección HTTPS solo con puerto conocido.
 
 ### [2026-08-27] - Branding, Auditoría Legal, Inferencia de Industria & Descargas Estables
 - **Identidad de Marca & Branding**:
@@ -139,6 +147,12 @@ Acceso disponible en:
 * **HTTPS**: `https://localhost:7165/`
 * **HTTP**: `http://localhost:5033/`
 * **Swagger UI**: `https://localhost:7165/swagger`
+
+### 4. Pruebas Unitarias y Cobertura
+```bash
+dotnet test HireWire.Tests --collect:"XPlat Code Coverage"
+```
+La cobertura actual es ~56% de líneas (Domain 100%). El reporte se genera en `HireWire.Tests/TestResults/`.
 
 ---
 
