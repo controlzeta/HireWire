@@ -31,3 +31,5 @@ profile.json
 /HireWire.Tests/obj
 /HireWire.Web/Properties/PublishProfiles/FolderProfile.pubxml
 /HireWire.Web/Properties/PublishProfiles/FolderProfile.pubxml.user
+/HireWire.Tests/TestResults
+/HireWire.Web/logs
