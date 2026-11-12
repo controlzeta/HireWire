@@ -23,10 +23,10 @@
         @RenderKanbanColumn("Entrevista", JobLeadStatus.Entrevista, "border-success", "#28a745")
 
         <!-- Column 6: Rechazo / Oferta (Combined) -->
-        <div class="col-md-2 rounded p-2" 
-             style="min-width: 230px; background-color: #f8f9fa; border-top: 4px solid #dc3545;"
-             @ondragover:preventdefault 
-             @ondragover="() => { }" 
+        <div class="col-md-2 rounded p-2"
+             style="min-width: 230px;"
+             @ondragover:preventdefault
+             @ondragover="() => { }"
              @ondrop="() => HandleDrop(JobLeadStatus.Ofrecido)">
             
             <div class="column-header d-flex justify-content-between align-items-center mb-2 px-1">
@@ -143,10 +143,10 @@
     private RenderFragment RenderKanbanColumn(string title, JobLeadStatus status, string borderClass, string headerColor) => __builder => {
         var columnLeads = Leads.Where(l => l.Status == status).ToList();
         
-        <div class="col-md-2 rounded p-2" 
-             style="min-width: 230px; background-color: #f8f9fa; border-top: 4px solid @headerColor;"
-             @ondragover:preventdefault 
-             @ondragover="() => { }" 
+        <div class="col-md-2 rounded p-2"
+             style="min-width: 230px;"
+             @ondragover:preventdefault
+             @ondragover="() => { }"
              @ondrop="() => HandleDrop(status)">
             
             <div class="column-header d-flex justify-content-between align-items-center mb-2 px-1">
